@@ -325,3 +325,20 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
 .npc-sb { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--bg); min-width: 0; overflow-wrap: anywhere; }
 .msec .abil { margin: 2px 0; }
 @media (max-width: 520px) { .msec .abil { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* NPC weapons */
+.wsec { display: grid; gap: 8px; min-width: 0; }
+.wsec h4 { margin: 4px 0 0; font: 600 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.wtable-wrap { overflow-x: auto; }
+.wtable td { padding: 6px; vertical-align: middle; }
+.wtable .wbtns { white-space: nowrap; text-align: right; }
+.wtable .wbtns .btn + .btn { margin-left: 4px; }
+.wroll { margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.wroll .big { font: 22px var(--f-display); margin: 0 2px; }
+.wedit { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.wedit .row-between .hint { flex: 1 1 260px; }
+@media (max-width: 640px) {
+  .wtable th:nth-child(5), .wtable td:nth-child(5), .wtable th:nth-child(4), .wtable td:nth-child(4) { display: none; }
+  .wtable .wbtns { white-space: normal; }
+  .wtable .wbtns .btn { display: block; width: 100%; margin: 2px 0 !important; }
+}

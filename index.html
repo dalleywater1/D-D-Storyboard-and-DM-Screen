@@ -563,6 +563,23 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
 .msec .abil { margin: 2px 0; }
 @media (max-width: 520px) { .msec .abil { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
+/* NPC weapons */
+.wsec { display: grid; gap: 8px; min-width: 0; }
+.wsec h4 { margin: 4px 0 0; font: 600 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.wtable-wrap { overflow-x: auto; }
+.wtable td { padding: 6px; vertical-align: middle; }
+.wtable .wbtns { white-space: nowrap; text-align: right; }
+.wtable .wbtns .btn + .btn { margin-left: 4px; }
+.wroll { margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.wroll .big { font: 22px var(--f-display); margin: 0 2px; }
+.wedit { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.wedit .row-between .hint { flex: 1 1 260px; }
+@media (max-width: 640px) {
+  .wtable th:nth-child(5), .wtable td:nth-child(5), .wtable th:nth-child(4), .wtable td:nth-child(4) { display: none; }
+  .wtable .wbtns { white-space: normal; }
+  .wtable .wbtns .btn { display: block; width: 100%; margin: 2px 0 !important; }
+}
+
 </style>
 
 <div class="wrap">
@@ -2215,7 +2232,7 @@ function morphChildren(from, to) {
   while (from.childNodes.length > want.length) from.removeChild(from.lastChild);
 }
 function morphEl(from, to) {
-  for (const a of [...from.attributes]) if (!to.hasAttribute(a.name)) from.removeAttribute(a.name);
+  for (const a of [...from.attributes]) if (!to.hasAttribute(a.name) && !(a.name === "style" && from.tagName === "TEXTAREA")) from.removeAttribute(a.name);
   for (const a of [...to.attributes]) if (from.getAttribute(a.name) !== a.value) from.setAttribute(a.name, a.value);
   const focused = from === document.activeElement;
   if (from.tagName === "TEXTAREA") { if (!focused && from.value !== to.value) from.value = to.value; return; }
@@ -2286,8 +2303,19 @@ function fInput(m, i, p, label, o = {}) {
   const v = val(m, i, p, o.dflt ?? "");
   return wrapLabel(label, o, `<input ${bind(m, i, p)} type="${o.type || "text"}" value="${esc(v)}" placeholder="${esc(o.ph || "")}"${o.min != null ? ` min="${o.min}"` : ""}${o.max != null ? ` max="${o.max}"` : ""}${o.aria ? ` aria-label="${esc(o.aria)}"` : ""}${o.cls ? ` class="${o.cls}"` : ""} ${S.canWrite ? "" : "readonly"}>`);
 }
+/* Text boxes you drag bigger keep that size: per field type (the same box on
+   every NPC, say), or per panel on the DM Screen. Saved in this browser. */
+S.taSize = lsGet("sb-ta", {});
+const taKey = (m, i, p) => m === "screen" ? `screen|${i}|${p}` : `${S.tab}|${m}|${p.replace(/\.\d+\./g, ".#.")}`;
+function taStyle(m, i, p) { const h = S.taSize[taKey(m, i, p)]; return h ? ` style="height:${h}px"` : ""; }
+let taDown = null;
+document.addEventListener("pointerdown", e => { const t = e.target.closest?.("textarea[data-m]"); taDown = t ? { t, h: t.offsetHeight } : null; }, true);
+document.addEventListener("pointerup", () => {
+  const d = taDown; taDown = null; if (!d || !d.t.isConnected || Math.abs(d.t.offsetHeight - d.h) < 2) return;
+  const { m, i, p } = d.t.dataset; S.taSize[taKey(m, i, p)] = Math.round(d.t.getBoundingClientRect().height); lsSet("sb-ta", S.taSize);
+}, true);
 function fArea(m, i, p, label, o = {}) {
-  return wrapLabel(label, o, `<textarea ${bind(m, i, p)} rows="${o.rows || 3}" placeholder="${esc(o.ph || "")}"${o.aria ? ` aria-label="${esc(o.aria)}"` : ""} ${S.canWrite ? "" : "readonly"}>${esc(val(m, i, p, ""))}</textarea>`);
+  return wrapLabel(label, o, `<textarea ${bind(m, i, p)}${taStyle(m, i, p)} rows="${o.rows || 3}" placeholder="${esc(o.ph || "")}"${o.aria ? ` aria-label="${esc(o.aria)}"` : ""} ${S.canWrite ? "" : "readonly"}>${esc(val(m, i, p, ""))}</textarea>`);
 }
 function fSelect(m, i, p, label, opts, o = {}) {
   const v = String(val(m, i, p, o.dflt ?? ""));
@@ -4028,7 +4056,7 @@ function linesToEntries(t) {
   });
 }
 function entriesToLines(list) { return (list || []).map(([n, d]) => `${n}. ${plain(d).replace(/\n+/g, " ")}`).join("\n"); }
-function sbToMon(c) {
+var sbToMon = function (c) {
   const sb = c.sb || {}, ab = ABILS.map((a, k) => int(sb.ab?.[k] ?? 10) || 10);
   return { n: c.title || "NPC", sz: sb.size || "Medium", t: sb.type || "humanoid", al: sb.al || "", ac: sb.ac || "—", hp: sb.hp || "—", hd: sb.hd || "",
     sp: sb.sp || "30 ft.", ab, sv: sb.sv || "", sk: sb.sk || "", vu: sb.vu || "", re: sb.re || "", im: sb.im || "", ci: sb.ci || "", se: sb.se || "", la: sb.la || "", g: sb.g || "",
@@ -4082,7 +4110,7 @@ function npcStatSection(c) {
       ${combats.length ? `<select id="npc-enc-${esc(i)}" aria-label="Encounter to add to">${combats.map(x => `<option value="${esc(x.id)}">${esc(x.title || "Untitled encounter")}</option>`).join("")}<option value="__new">New encounter</option></select>` : ""}
       <button type="button" class="btn primary small" data-do="npc-to-enc" data-id="${esc(i)}">${combats.length ? "Add to encounter" : "Start an encounter with them"}</button>
       <button type="button" class="btn small" data-do="npc-to-screen" data-id="${esc(i)}">Drop on DM Screen</button></div>` : "";
-  if (!editing) return `<div class="msec">${head}${use}<div class="npc-sb">${statBlock(sbToMon(c))}</div></div>`;
+  if (!editing) return `<div class="msec">${head}${use}${typeof weaponsSection === "function" ? weaponsSection(c, false) : ""}<div class="npc-sb">${statBlock(sbToMon(c))}</div></div>`;
   const f = (p, label, o) => fInput(m, i, "sb." + p, label, o || {});
   return `<div class="msec">${head}
     <div class="mgrid">${f("size", "Size", { ph: "Medium" })}${f("type", "Type", { ph: "humanoid (human)" })}${f("al", "Alignment", { ph: "neutral" })}${fSelect(m, i, "sb.cr", "CR", CRS.map(x => [x]), { dflt: "1/8" })}</div>
@@ -4091,7 +4119,8 @@ function npcStatSection(c) {
     <div class="mgrid">${f("sv", "Saving throws", { ph: "Dex +4, Wis +2" })}${f("sk", "Skills", { ph: "Deception +5, Insight +2" })}${f("se", "Senses", { ph: "Passive Perception 12" })}${f("la", "Languages", { ph: "Common, Elvish" })}</div>
     <div class="mgrid">${f("re", "Resistances")}${f("im", "Immunities")}${f("ci", "Condition immunities")}${f("g", "Gear")}</div>
     <p class="hint">One entry per line, written as <b>Name. What it does.</b> For example: <i>Shortsword. Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Piercing damage.</i></p>
-    ${SB_SECTIONS.map(([k, label]) => fArea(m, i, "sb." + k, label, { rows: k === "a" ? 4 : 2 })).join("")}
+    ${typeof weaponsSection === "function" ? weaponsSection(c, true) : ""}
+    ${SB_SECTIONS.map(([k, label]) => fArea(m, i, "sb." + k, k === "a" ? "Other actions" : label, { rows: k === "a" ? 4 : 2, hint: k === "a" && c.sb.w?.length ? "Weapons above are added to the actions automatically." : "" })).join("")}
   </div>`;
 }
 Object.assign(ACTIONS, {
@@ -4136,6 +4165,117 @@ CHANGES["npc-sb-from"] = (d, el) => {
   commit("cards", d.id, "sb", monToSb(mon)); render();
   toast(`Stat block copied from ${mon.n}. Click Edit to change it.`);
 };
+
+/* ===================== NPC weapons =====================
+   Stored on the stat block as sb.w: [{ n, d, t, k, rc, rg, ab, mb, p, x }]
+   n name · d damage dice · t damage type · k melee|ranged|thrown · rc reach ·
+   rg range · ab ability (auto picks STR, DEX or the better for Finesse) ·
+   mb magic bonus · p properties · x extra on a hit. Attack and damage are
+   worked out from the ability scores and the proficiency bonus for the CR. */
+const W_RANGE = { Dagger: "20/60", Dart: "20/60", Handaxe: "20/60", Javelin: "30/120", "Light Hammer": "20/60", Spear: "20/60", Trident: "20/60",
+  "Light Crossbow": "80/320", Shortbow: "80/320", Sling: "30/120", Blowgun: "25/100", "Hand Crossbow": "30/120", "Heavy Crossbow": "100/400",
+  Longbow: "150/600", Musket: "40/120", Pistol: "30/90" };
+const W_FIX = { Sling: { t: "Bludgeoning" }, Trident: { d: "1d8" } };
+const WEAPONS = new Map((SRD.equipment || []).filter(e => /Weapon/.test(e.ca)).map(e => {
+  const parts = e.s.split(" · "), dm = parts.find(x => /^\d+(d\d+)?\s+(Slashing|Piercing|Bludgeoning)$/.test(x)) || "1 Bludgeoning";
+  const [d, t] = dm.split(/\s+/), props = parts.slice(parts.indexOf(dm) + 1).join(", ").split(/,\s*/).filter(Boolean);
+  const thrown = props.includes("Thrown"), ranged = /Ranged/.test(e.ca) && !thrown;
+  const w = { n: e.n, d, t, k: ranged ? "ranged" : thrown ? "thrown" : "melee", rc: props.includes("Reach") ? 10 : 5, rg: W_RANGE[e.n] || "", ab: "auto", mb: 0,
+    p: props.join(", "), x: "" };
+  return [e.n.toLowerCase(), { ...w, ...(W_FIX[e.n] || {}) }];
+}));
+const sgn = n => (n >= 0 ? "+" : "−") + Math.abs(n);
+const diceExpr = (d, mod) => (mod ? `${d} ${mod > 0 ? "+" : "−"} ${Math.abs(mod)}` : d);
+function diceAvg(d) { const m = String(d).match(/^(\d+)d(\d+)$/i); return m ? Math.floor(+m[1] * (+m[2] + 1) / 2) : int(d); }
+function rollExpr(d) { const m = String(d).match(/^(\d+)d(\d+)$/i); if (!m) return { total: int(d), rolls: [] }; const rolls = Array.from({ length: +m[1] }, () => 1 + Math.floor(Math.random() * +m[2])); return { total: rolls.reduce((a, b) => a + b, 0), rolls }; }
+const upDie = d => String(d).replace(/d(\d+)$/, (_, n) => "d" + ({ 4: 6, 6: 8, 8: 10, 10: 12 }[n] || n));
+function weaponCalc(c, w) {
+  const ab = (c.sb?.ab || []).map(v => int(v ?? 10) || 10), mod = k => Math.floor(((ab[k] ?? 10) - 10) / 2);
+  const str = mod(0), dex = mod(1);
+  let m;
+  if (w.ab && w.ab !== "auto") m = mod(Math.max(0, ABILS.indexOf(w.ab)));
+  else m = w.k === "ranged" ? dex : /Finesse/i.test(w.p || "") ? Math.max(str, dex) : str;
+  const mb = int(w.mb), pb = pbFor(c.sb?.cr || "0");
+  return { hit: m + pb + mb, dmg: m + mb };
+}
+function weaponLine(c, w) {
+  const { hit, dmg } = weaponCalc(c, w), d = w.d || "1d4";
+  const kind = w.k === "ranged" ? "Ranged Attack Roll" : w.k === "thrown" ? "Melee or Ranged Attack Roll" : "Melee Attack Roll";
+  const where = w.k === "ranged" ? `range ${w.rg || "80/320"} ft.` : w.k === "thrown" ? `reach ${w.rc || 5} ft. or range ${w.rg || "20/60"} ft.` : `reach ${w.rc || 5} ft.`;
+  const vers = w.k !== "ranged" && /Versatile/i.test(w.p || "") && /d\d+$/.test(d) ? `, or ${Math.max(1, diceAvg(upDie(d)) + dmg)} (${diceExpr(upDie(d), dmg)}) ${w.t} damage when used with both hands` : "";
+  return `${w.n || "Weapon"}. ${kind}: ${sgn(hit)}, ${where} Hit: ${Math.max(1, diceAvg(d) + dmg)} (${/d/.test(d) ? diceExpr(d, dmg) : d}) ${w.t || ""} damage${vers}${w.x ? " " + w.x.trim().replace(/\.$/, "") : ""}.`.replace(/\s+/g, " ");
+}
+/* the stat block shows the weapons as actions, after Multiattack */
+function actionsWithWeapons(c) {
+  const ws = (c.sb?.w || []).filter(Boolean).map(w => weaponLine(c, w)), lines = String(c.sb?.a || "").split(/\n+/).filter(l => l.trim());
+  if (!ws.length) return lines.join("\n");
+  const k = lines.findIndex(l => /^multiattack[.:]/i.test(l.trim()));
+  return [...lines.slice(0, k + 1), ...ws, ...lines.slice(k + 1)].join("\n");
+}
+const _sbToMon = sbToMon;
+sbToMon = c => { const m = _sbToMon(c); if (c.sb?.w?.length) m.a = linesToEntries(actionsWithWeapons(c)); return m; };
+/* Roll20 gets the weapons in the Actions text */
+const _snapshotData = snapshotData;
+snapshotData = source => {
+  const d = _snapshotData(source);
+  if (source === "storyboard") d.cards = d.cards.map(c => c.sb?.w?.length ? { ...c, sb: { ...c.sb, a: actionsWithWeapons(c) } } : c);
+  return d;
+};
+
+S.wRoll = {};
+function weaponsSection(c, editing) {
+  const i = c.id, ws = c.sb.w || [], can = S.canWrite;
+  const add = can ? `<div class="add-row"><input id="w-add-${esc(i)}" list="srd-weapon-list" data-change="npc-w-add" data-id="${esc(i)}" placeholder="Add a weapon, e.g. Longsword, Shortbow, Dagger" aria-label="Add a weapon">
+      <button type="button" class="btn small" data-do="npc-w-custom" data-id="${esc(i)}">Custom weapon</button></div>` : "";
+  if (!ws.length) return `<div class="wsec"><h4>Weapons</h4>${add}</div>`;
+  const roll = S.wRoll[i];
+  if (!editing) {
+    return `<div class="wsec"><h4>Weapons</h4>
+      <div class="wtable-wrap"><table class="mt wtable"><thead><tr><th>Weapon</th><th class="num">To hit</th><th>Damage</th><th>Reach / range</th><th>Properties</th><th></th></tr></thead><tbody>
+      ${ws.map((w, n) => { const { hit, dmg } = weaponCalc(c, w); const where = w.k === "ranged" ? w.rg : w.k === "thrown" ? `${w.rc || 5} ft. · ${w.rg}` : `${w.rc || 5} ft.`;
+        return `<tr><td><b>${esc(w.n || "Weapon")}</b></td><td class="num">${sgn(hit)}</td><td>${esc(/d/.test(w.d) ? diceExpr(w.d, dmg) : w.d)} ${esc(w.t || "")}${w.x ? ` <span class="hint">${esc(w.x)}</span>` : ""}</td><td>${esc(where || "")}</td><td class="hint">${esc(w.p || "")}</td>
+          <td class="wbtns"><button type="button" class="btn small" data-do="npc-w-roll" data-id="${esc(i)}" data-n="${n}" data-r="hit">Attack</button><button type="button" class="btn small" data-do="npc-w-roll" data-id="${esc(i)}" data-n="${n}" data-r="dmg">Damage</button></td></tr>`; }).join("")}
+      </tbody></table></div>
+      ${roll ? `<p class="wroll" aria-live="polite">${roll}</p>` : ""}
+      ${add}</div>`;
+  }
+  const m = "cards", f = (n, p, label, o) => fInput(m, i, `sb.w.${n}.${p}`, label, o || {});
+  return `<div class="wsec"><h4>Weapons</h4>
+    ${ws.map((w, n) => `<div class="wedit">
+      <div class="mgrid">${f(n, "n", "Name")}${f(n, "d", "Damage dice", { ph: "1d8" })}${fSelect(m, i, `sb.w.${n}.t`, "Damage type", ["Slashing", "Piercing", "Bludgeoning", "Fire", "Cold", "Lightning", "Thunder", "Acid", "Poison", "Necrotic", "Radiant", "Force", "Psychic"].map(x => [x]))}
+        ${fSelect(m, i, `sb.w.${n}.k`, "Kind", [["melee", "Melee"], ["ranged", "Ranged"], ["thrown", "Melee or thrown"]])}</div>
+      <div class="mgrid">${fSelect(m, i, `sb.w.${n}.rc`, "Reach", [["5", "5 ft."], ["10", "10 ft."], ["15", "15 ft."]], { dflt: "5" })}${f(n, "rg", "Range", { ph: "80/320" })}
+        ${fSelect(m, i, `sb.w.${n}.ab`, "Ability", [["auto", "Auto"], ...ABILS.map(a => [a])], { dflt: "auto" })}${f(n, "mb", "Magic bonus", { type: "number", ph: "0" })}</div>
+      <div class="mgrid">${f(n, "p", "Properties", { ph: "Finesse, Light", wide: true })}${f(n, "x", "Extra on a hit", { ph: "plus 7 (2d6) Poison damage", wide: true })}</div>
+      <div class="row-between"><span class="hint">${esc(weaponLine(c, w))}</span><button type="button" class="btn ghost small" data-do="npc-w-rm" data-id="${esc(i)}" data-n="${n}">Remove weapon</button></div>
+    </div>`).join("")}
+    ${add}</div>`;
+}
+Object.assign(ACTIONS, {
+  "npc-w-custom": d => { const c = S.cards.get(d.id); if (!c?.sb) return; commit("cards", d.id, "sb.w", [...(c.sb.w || []), { n: "New weapon", d: "1d6", t: "Slashing", k: "melee", rc: 5, rg: "", ab: "auto", mb: 0, p: "", x: "" }]); S.sbEdit[d.id] = true; render(); },
+  "npc-w-rm": d => { const c = S.cards.get(d.id); if (!c?.sb) return; commit("cards", d.id, "sb.w", (c.sb.w || []).filter((_, n) => n !== int(d.n))); render(); },
+  "npc-w-roll": d => {
+    const c = S.cards.get(d.id), w = c?.sb?.w?.[int(d.n)]; if (!w) return;
+    const { hit, dmg } = weaponCalc(c, w);
+    if (d.r === "hit") {
+      const r = 1 + Math.floor(Math.random() * 20);
+      S.wRoll[d.id] = `<b>${esc(w.n)}</b> attack: <b class="big">${r + hit}</b> <span class="hint">(d20 ${r} ${sgn(hit)})</span>${r === 20 ? " <b>Natural 20: critical hit!</b>" : r === 1 ? " Natural 1: miss." : ""}`;
+    } else {
+      const a = rollExpr(w.d), b = rollExpr(w.d), tot = Math.max(1, a.total + dmg), crit = Math.max(1, a.total + b.total + dmg);
+      S.wRoll[d.id] = `<b>${esc(w.n)}</b> damage: <b class="big">${tot}</b> ${esc(w.t || "")} <span class="hint">(${a.rolls.join(" + ") || a.total} ${sgn(dmg)})</span> · on a crit <b>${crit}</b>${w.x ? ` <span class="hint">${esc(w.x)}</span>` : ""}`;
+    }
+    renderModule();
+  },
+});
+CHANGES["npc-w-add"] = (d, el) => {
+  const w = WEAPONS.get(el.value.trim().toLowerCase());
+  if (!w) { toast("Pick a weapon from the list, or use Custom weapon"); return; }
+  const c = S.cards.get(d.id); if (!c?.sb) return;
+  if (!c.sb.w?.length && String(c.sb.a || "").trim() === blankSb().a) commit("cards", d.id, "sb.a", "");
+  commit("cards", d.id, "sb.w", [...(c.sb.w || []), { ...w }]); el.value = ""; render();
+  toast(`${w.n} added`);
+};
+document.body.insertAdjacentHTML("beforeend", `<datalist id="srd-weapon-list">${[...WEAPONS.values()].map(w => `<option value="${esc(w.n)}">`).join("")}</datalist>`);
 
 
 /* ---------- boot ---------- */

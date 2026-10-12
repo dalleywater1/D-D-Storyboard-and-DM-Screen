@@ -86,7 +86,7 @@ function morphChildren(from, to) {
   while (from.childNodes.length > want.length) from.removeChild(from.lastChild);
 }
 function morphEl(from, to) {
-  for (const a of [...from.attributes]) if (!to.hasAttribute(a.name)) from.removeAttribute(a.name);
+  for (const a of [...from.attributes]) if (!to.hasAttribute(a.name) && !(a.name === "style" && from.tagName === "TEXTAREA")) from.removeAttribute(a.name);
   for (const a of [...to.attributes]) if (from.getAttribute(a.name) !== a.value) from.setAttribute(a.name, a.value);
   const focused = from === document.activeElement;
   if (from.tagName === "TEXTAREA") { if (!focused && from.value !== to.value) from.value = to.value; return; }
@@ -157,8 +157,19 @@ function fInput(m, i, p, label, o = {}) {
   const v = val(m, i, p, o.dflt ?? "");
   return wrapLabel(label, o, `<input ${bind(m, i, p)} type="${o.type || "text"}" value="${esc(v)}" placeholder="${esc(o.ph || "")}"${o.min != null ? ` min="${o.min}"` : ""}${o.max != null ? ` max="${o.max}"` : ""}${o.aria ? ` aria-label="${esc(o.aria)}"` : ""}${o.cls ? ` class="${o.cls}"` : ""} ${S.canWrite ? "" : "readonly"}>`);
 }
+/* Text boxes you drag bigger keep that size: per field type (the same box on
+   every NPC, say), or per panel on the DM Screen. Saved in this browser. */
+S.taSize = lsGet("sb-ta", {});
+const taKey = (m, i, p) => m === "screen" ? `screen|${i}|${p}` : `${S.tab}|${m}|${p.replace(/\.\d+\./g, ".#.")}`;
+function taStyle(m, i, p) { const h = S.taSize[taKey(m, i, p)]; return h ? ` style="height:${h}px"` : ""; }
+let taDown = null;
+document.addEventListener("pointerdown", e => { const t = e.target.closest?.("textarea[data-m]"); taDown = t ? { t, h: t.offsetHeight } : null; }, true);
+document.addEventListener("pointerup", () => {
+  const d = taDown; taDown = null; if (!d || !d.t.isConnected || Math.abs(d.t.offsetHeight - d.h) < 2) return;
+  const { m, i, p } = d.t.dataset; S.taSize[taKey(m, i, p)] = Math.round(d.t.getBoundingClientRect().height); lsSet("sb-ta", S.taSize);
+}, true);
 function fArea(m, i, p, label, o = {}) {
-  return wrapLabel(label, o, `<textarea ${bind(m, i, p)} rows="${o.rows || 3}" placeholder="${esc(o.ph || "")}"${o.aria ? ` aria-label="${esc(o.aria)}"` : ""} ${S.canWrite ? "" : "readonly"}>${esc(val(m, i, p, ""))}</textarea>`);
+  return wrapLabel(label, o, `<textarea ${bind(m, i, p)}${taStyle(m, i, p)} rows="${o.rows || 3}" placeholder="${esc(o.ph || "")}"${o.aria ? ` aria-label="${esc(o.aria)}"` : ""} ${S.canWrite ? "" : "readonly"}>${esc(val(m, i, p, ""))}</textarea>`);
 }
 function fSelect(m, i, p, label, opts, o = {}) {
   const v = String(val(m, i, p, o.dflt ?? ""));
