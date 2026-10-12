@@ -267,7 +267,7 @@ textarea.code { font: 12px/1.4 var(--f-mono); width: 100%; min-height: 80px; bor
 
   <div id="canvas-area">
     <div class="canvas-bar">
-      <span class="hint">Drag a card to move it. Drag its bottom-right corner to resize. Click to edit.</span>
+      <span class="hint">Drag a card to move it, or its corner to resize. Click to edit. Shift-click or drag a box on empty table to select several.</span>
       <span class="spacer"></span>
       <button class="btn" id="link-mode" aria-pressed="false" title="Click a card, then the card to connect it to">+ Link</button>
       <button class="btn" id="focus-mode" aria-pressed="false" title="Click a card to show only what it's linked to">Show links</button>
@@ -481,7 +481,7 @@ function attachBoard(b) {
   S.board = b;
   try { localStorage.setItem("sb-board", b); } catch {}
   S.cards = new Map(); S.gm = new Map(); S.notes = new Map(); S.noteDraft = new Map();
-  S.mod = { sessions: new Map(), plot: new Map(), combats: new Map(), screen: new Map() }; S.sel = {}; S.drafts = new Map(); S.confirm = null;
+  S.mod = Object.fromEntries(MOD_COLLS.map(k => [k, new Map()])); S.sel = {}; S.drafts = new Map(); S.confirm = null;
   S.meta = { name: b === "main" ? (S.mainName || "My Campaign") : (S.boardList.find(x => x.id === b)?.name || "Campaign"), acts: [] };
   S.loaded = false; S.filter = "all";
   render(); renderBoards();

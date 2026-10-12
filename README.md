@@ -7,7 +7,7 @@ A campaign planner for D&D 5e (2024 rules) in a single web page. Open it in any 
 
 ## What's in it
 
-- **Storyboard**: acts, scene/NPC/place/town/item/lore cards on a free-form table you can drag and resize, pictures, colours, sticky notes. Link cards with + Link or by dragging a card's link dot, and use Show links to see only what a card connects to. Archive cards you're done with and bring them back any time.
+- **Storyboard**: acts, scene/NPC/place/town/item/lore cards on a free-form table you can drag and resize, pictures, colours, sticky notes. Link cards with + Link or by dragging a card's link dot, and use Show links to see only what a card connects to. Archive cards you're done with and bring them back any time. Put cards in **groups** (say, all your NPCs in one pane you open when you need them), and select several cards at once with Shift-click or by dragging a box to move, group, re-act or archive them together.
 - **Sessions**: strong start, the cards you plan to use, secrets & clues, prep notes, recap.
 - **Meta Plot**: premise, the big secret, and storyline threads with stages and progress.
 - **NPCs** and **Towns**: role, town, attitude, voice, secrets; who lives where. NPCs get a portrait, an editable stat block (start from any Bestiary creature) and weapons with attacks worked out for you and Attack/Damage roll buttons, and can be added to an encounter or dropped on the DM Screen.
