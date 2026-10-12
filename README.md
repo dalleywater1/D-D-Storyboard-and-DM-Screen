@@ -36,11 +36,22 @@ or without a leading "The"). Otherwise it creates a separate Fallen Lands
 campaign. Existing entries, later edits and intentional deletions are retained.
 Select Fallen Lands from the campaign menu if another campaign is open.
 
-The earlier populated Fallen Lands HTML/backup was not available for this
-update. It does not reconstruct the previously discussed NPCs, sessions,
-Panoply or endgame branches. Existing browser data remains in place; a fresh
-browser receives only the recovered Alessa and Order material. Load the earlier
-backup through the existing Backup workflow to carry that campaign forward.
+The supplied NPC handover also adds Brenna Stonepath (usable, approximate CR 5),
+Elias Vane / Thaumeryx Avarr (working CR 9, 1/8 Panoply), Alexander Elethar
+(stat block required), and the seven surviving Panoply holders (no invented
+stats). Elias's unresolved spell uses and Cloud Memory mechanics are labelled;
+he has no Legendary Actions or Legendary Resistance. Alexander's narrowly
+scoped Protector Bloodline is recorded in his GM notes.
+
+This second update runs once even in browsers that already received Alessa.
+It retains existing NPC IDs, authored descriptions and stat blocks, fills a
+missing block when supplied, and appends handover context to GM notes. It also
+follows an already seeded campaign if it has been renamed.
+
+The earlier populated Fallen Lands HTML/backup remains unavailable. Sessions,
+the wider metaplot and endgame branches are not reconstructed. Existing browser
+data remains in place; load the earlier backup through the existing Backup
+workflow to carry that material forward.
 
 The content update is saved atomically before the board opens; failed writes
 leave existing data intact and retry next opening. No changes were made to the
