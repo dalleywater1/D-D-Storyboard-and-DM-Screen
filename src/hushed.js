@@ -1,5 +1,6 @@
 // Hushed Bestiary handover, 12 October 2026. Adds six homebrew Hushed creatures
-// to the Fallen Lands Bestiary, plus the planned Stormhollow Tavern Composition
+// to the Bestiary of The Order of the Seven Stars (or the seeded Fallen Lands
+// campaign in a browser without it), plus the planned Stormhollow Tavern Composition
 // as a Combats encounter. Additive and once per campaign: later edits, deletions
 // and anything unrelated are left alone. A homebrew creature with the same name
 // (an older Hushed entry) is replaced in place.
@@ -96,10 +97,12 @@ function hushedUpdate(docs) {
   const markerName = 'hushed-bestiary-v1';
   const norm = x => String(x || '').trim().toLowerCase().replace(/^the /, '');
   const writes = [];
-  for (const [path, meta] of docs) {
-    if (!(path === 'meta/campaign' || /^boards\/[^/]+$/.test(path))) continue;
-    const board = path === 'meta/campaign' ? 'main' : path.split('/')[1];
-    if (!['fallen lands', 'order of the seven stars'].includes(norm(meta && meta.name)) && !docs.has('gmx/' + board + '/contentUpdates/fallen-lands-alessa-v1')) continue;
+  const boards = [...docs].filter(([path]) => path === 'meta/campaign' || /^boards\/[^/]+$/.test(path))
+    .map(([path, meta]) => ({ path, meta, board: path === 'meta/campaign' ? 'main' : path.split('/')[1] }));
+  // The Order of the Seven Stars is the campaign; Fallen Lands only when it doesn't exist here
+  const order = boards.filter(b => norm(b.meta && b.meta.name) === 'order of the seven stars');
+  const targets = order.length ? order : boards.filter(b => norm(b.meta && b.meta.name) === 'fallen lands' || docs.has('gmx/' + b.board + '/contentUpdates/fallen-lands-alessa-v1'));
+  for (const { path, board } of targets) {
     const marker = 'gmx/' + board + '/contentUpdates/' + markerName;
     if (docs.has(marker)) continue;
     const cp = 'gmx/' + board + '/creatures/';

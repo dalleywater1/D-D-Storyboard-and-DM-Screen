@@ -59,7 +59,11 @@ Roll20 bridge, backup format, encounter tools or DM Screen.
 
 ## Hushed (Fallen Lands)
 
-The Fallen Lands Bestiary gains six homebrew **Hushed**: Drone (CR 1/2), Staccato (CR 1), Presto (CR 1), Bass (CR 2), Crescendo (CR 3) and Conductor (CR 4), each with the shared traits The Night Measure, Empty Mind, Mission Focus and No Self-Preservation, their combat role and the shared Hushed lore. Combats gains the planned **Stormhollow Tavern Composition** (1 Conductor, 1 Crescendo, 2 Bass, 2 Staccato) with the mission notes. Runs once per campaign; later edits and deletions are kept, and an older homebrew creature with the same name is replaced in place.
+The Bestiary of The Order of the Seven Stars (or the seeded Fallen Lands campaign, in a browser without it) gains six homebrew **Hushed**: Drone (CR 1/2), Staccato (CR 1), Presto (CR 1), Bass (CR 2), Crescendo (CR 3) and Conductor (CR 4), each with the shared traits The Night Measure, Empty Mind, Mission Focus and No Self-Preservation, their combat role and the shared Hushed lore. Combats gains the planned **Stormhollow Tavern Composition** (1 Conductor, 1 Crescendo, 2 Bass, 2 Staccato) with the mission notes. Runs once per campaign; later edits and deletions are kept, and an older homebrew creature with the same name is replaced in place.
+
+## Session 1: The Red Cloaks
+
+The full plan for Session 1 (morning in Stormhollow, quick NPC responses, the rooms and diaries, the watch bell, the tavern assault, aftermath, the choice and the chase into the mountains, plus the optional Brenna introduction) is added to Session 1 of The Order of the Seven Stars, dated 13 October 2026. An existing Session 1 keeps its title and text; the opener, clues and plan are added below what's there, and the Stormhollow NPC and town cards are linked. Runs once.
 
 ## Building from source
 

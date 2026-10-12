@@ -320,6 +320,8 @@ function renderSessions() {
   return `<div class="mod">${listPane({ mod: "sessions", title: "Sessions", items, sel: id, newDo: "new-session", newLabel: "+ Session", empty: "No sessions yet." })}
     ${id ? sessionDetail(S.mod.sessions.get(id)) : emptyDetail("Plan your next session", "Each session gets a strong start, the scenes you might run, secrets the players could find, and a recap afterwards.", "new-session", "+ Plan a session")}</div>`;
 }
+/* a text box tall enough for what's in it (roughly), between min and max lines */
+function fitRows(text, min, max = 16) { const t = String(text || ""); const lines = t.split("\n").reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 90)), 0); return Math.max(min, Math.min(max, lines)); }
 function sessionDetail(s) {
   const m = "sessions", i = s.id;
   const linked = (s.scenes || []).map(cid => S.cards.get(cid)).filter(Boolean);
@@ -332,13 +334,13 @@ function sessionDetail(s) {
       ${fInput(m, i, "date", "Date", { type: "date" })}
       ${fSelect(m, i, "status", "Status", [["planned", "Planned"], ["played", "Played"]], { dflt: "planned" })}
     </div>
-    ${fArea(m, i, "start", "Strong start", { hint: "How the session opens. Drop the players straight into something.", rows: 3 })}
+    ${fArea(m, i, "start", "Strong start", { hint: "How the session opens. Drop the players straight into something.", rows: fitRows(s.start, 3) })}
     <div class="msec"><h3>Scenes &amp; cards</h3><p class="hint">Storyboard cards you might use this session, in rough order.</p>
       <div class="linkchips">${linked.map(c => cardChip(c, c.status === "played" ? "played" : "", S.canWrite ? `data-do="sess-unlink" data-id="${esc(i)}" data-cid="${esc(c.id)}"` : "")).join("") || `<span class="hint">None linked yet.</span>`}</div>
       ${S.canWrite && linkable.length ? `<select data-change="sess-link" data-id="${esc(i)}" aria-label="Link a storyboard card"><option value="">Link a card…</option>${linkable.map(c => `<option value="${esc(c.id)}">${esc(c.title || "Untitled")} (${esc(KIND[c.kind]?.label || c.kind)})</option>`).join("")}</select>` : ""}
     </div>
-    ${fArea(m, i, "secrets", "Secrets & clues", { hint: "Things the players could discover. One per line.", rows: 5 })}
-    ${fArea(m, i, "notes", "Prep notes", { rows: 4 })}
+    ${fArea(m, i, "secrets", "Secrets & clues", { hint: "Things the players could discover. One per line.", rows: fitRows(s.secrets, 5) })}
+    ${fArea(m, i, "notes", "Prep notes", { rows: fitRows(s.notes, 4, 28) })}
     ${fArea(m, i, "recap", "Recap", { hint: "What actually happened. Fill this in after the game.", rows: 5 })}
     <div class="md-foot">
       ${linked.length && S.canWrite ? `<button type="button" class="btn" data-do="sess-played" data-id="${esc(i)}">Mark these cards played</button>` : ""}
