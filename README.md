@@ -26,6 +26,26 @@ Everything you make is saved in **your browser** on the computer you use it on. 
 - To move everything at once: **Backup → Download everything**.
 - Clearing your browser's site data deletes what's saved, so download a backup now and then.
 
+## Fallen Lands campaign content
+
+The standalone page includes Alessa's campaign-discussion CR 8 homebrew stat
+block, tavern role, and GM-only Voice/intelligence notes, plus **The Order of
+the Seven Stars** as a main Meta Plot thread. The update adds missing entries
+once to campaigns named Fallen Lands or The Order of the Seven Stars (with
+or without a leading "The"). Otherwise it creates a separate Fallen Lands
+campaign. Existing entries, later edits and intentional deletions are retained.
+Select Fallen Lands from the campaign menu if another campaign is open.
+
+The earlier populated Fallen Lands HTML/backup was not available for this
+update. It does not reconstruct the previously discussed NPCs, sessions,
+Panoply or endgame branches. Existing browser data remains in place; a fresh
+browser receives only the recovered Alessa and Order material. Load the earlier
+backup through the existing Backup workflow to carry that campaign forward.
+
+The content update is saved atomically before the board opens; failed writes
+leave existing data intact and retry next opening. No changes were made to the
+Roll20 bridge, backup format, encounter tools or DM Screen.
+
 ## Building from source
 
 `index.html` is built from the files in `src/`:

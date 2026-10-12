@@ -1401,6 +1401,7 @@ render();
     render(); renderBoards(); return;
   }
   S.db = db;
+  if (window.__sbInitialBoard) S.board = window.__sbInitialBoard;
   // The campaign list: the original board plus any others.
   db.doc("meta/campaign").onSnapshot(snap => {
     S.mainName = snap.exists ? (snap.data().name || "My Campaign") : "My Campaign"; renderBoards();

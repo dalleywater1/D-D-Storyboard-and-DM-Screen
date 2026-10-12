@@ -53,6 +53,19 @@
       idb = null;
       window.__NO_PERSIST = true;
     }
+    if (idb && typeof fallenLandsUpdate === "function") {
+      try {
+        const update = fallenLandsUpdate(store);
+        if (update.writes.length) {
+          await write("docs", s => { for (const [k, v] of update.writes) s.put(v, k); });
+          for (const [k, v] of update.writes) store.set(k, v);
+        }
+        window.__sbInitialBoard = update.initialBoard;
+      } catch (e) {
+        // Keep the existing campaign available and retry content next opening.
+        console.error("Fallen Lands content could not be saved", e);
+      }
+    }
   })();
 
   let queued = false;

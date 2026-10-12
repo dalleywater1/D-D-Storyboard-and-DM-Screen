@@ -14,7 +14,7 @@ mods = '\n'.join(open(H + f).read() for f in ['srd/srd-data.js', 'spells-data.js
 s = s.replace('/*__MODULES_CSS__*/', open(H + 'modules.css').read()).replace('/*__MODULES_JS__*/', mods)
 assert '__MODULES' not in s
 body = s.replace('__SCRIPT__', json.dumps(bridge).replace('</', '<\\/'))
-shim = open(H + 'standalone-shim.js').read()
+shim = open(H + 'fallen-lands.js').read() + '\n' + open(H + 'standalone-shim.js').read()
 assert body.count('<script>\nconst ROLL20_SCRIPT') == 1
 app = body.replace('<script>\nconst ROLL20_SCRIPT', '<script>\nwindow.__sbForceLocal = true; window.__STANDALONE = true;\n' + shim + '\n</script>\n<script>\nconst ROLL20_SCRIPT')
 head = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
