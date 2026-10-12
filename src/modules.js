@@ -446,11 +446,11 @@ function npcDetail(c) {
         ${fSelect(m, i, "life", "Status", [["Alive"], ["Dead"], ["Missing"], ["Unknown"]], { dflt: "Alive" })}
       </div>
     </div>
+    ${typeof npcStatSection === "function" ? npcStatSection(c) : ""}
     ${fArea(m, i, "body", "Appearance & description", { rows: 4 })}
     ${fArea(m, i, "voice", "Voice & mannerisms", { rows: 2, ph: "Gravelly whisper, taps the table when lying" })}
     ${fArea(m, i, "wants", "Wants & fears", { rows: 2 })}
     ${S.canGM ? `<div class="gm-box">${fArea("gm", i, "text", "Secrets", { hint: "Only you see these. Same as the card's GM notes.", rows: 3 })}</div>` : ""}
-    ${typeof npcStatSection === "function" ? npcStatSection(c) : ""}
     ${connections(c)}
     <div class="md-foot"><button type="button" class="btn" data-do="open-card" data-id="${esc(i)}">Open on storyboard</button><span class="spacer"></span>${delBtn("card", i, "Delete NPC", "del-card")}</div>
   </section>`;

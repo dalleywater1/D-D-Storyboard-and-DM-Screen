@@ -556,7 +556,7 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
 .arch-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 4px; }
 
 /* NPC portrait & stat block */
-.portrait { display: grid; grid-template-columns: 132px; gap: 6px; justify-items: stretch; flex: none; }
+.portrait { display: grid; grid-template-columns: 184px; gap: 6px; justify-items: stretch; flex: none; }
 .portrait .btn { justify-content: center; text-align: center; }
 .portrait-empty { display: grid; place-items: center; background: var(--paper, var(--bg)); color: var(--muted); font: 48px var(--f-display); }
 .npc-sb { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--bg); min-width: 0; overflow-wrap: anywhere; }
@@ -579,6 +579,9 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
   .wtable .wbtns { white-space: normal; }
   .wtable .wbtns .btn { display: block; width: 100%; margin: 2px 0 !important; }
 }
+.portrait .md-img { width: 184px; height: 230px; }
+.portrait-empty { font-size: 64px; }
+@media (max-width: 520px) { .portrait { grid-template-columns: 140px; } .portrait .md-img { width: 140px; height: 175px; } }
 
 </style>
 
@@ -2592,11 +2595,11 @@ function npcDetail(c) {
         ${fSelect(m, i, "life", "Status", [["Alive"], ["Dead"], ["Missing"], ["Unknown"]], { dflt: "Alive" })}
       </div>
     </div>
+    ${typeof npcStatSection === "function" ? npcStatSection(c) : ""}
     ${fArea(m, i, "body", "Appearance & description", { rows: 4 })}
     ${fArea(m, i, "voice", "Voice & mannerisms", { rows: 2, ph: "Gravelly whisper, taps the table when lying" })}
     ${fArea(m, i, "wants", "Wants & fears", { rows: 2 })}
     ${S.canGM ? `<div class="gm-box">${fArea("gm", i, "text", "Secrets", { hint: "Only you see these. Same as the card's GM notes.", rows: 3 })}</div>` : ""}
-    ${typeof npcStatSection === "function" ? npcStatSection(c) : ""}
     ${connections(c)}
     <div class="md-foot"><button type="button" class="btn" data-do="open-card" data-id="${esc(i)}">Open on storyboard</button><span class="spacer"></span>${delBtn("card", i, "Delete NPC", "del-card")}</div>
   </section>`;
