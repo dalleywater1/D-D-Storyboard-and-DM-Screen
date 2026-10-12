@@ -1,0 +1,1416 @@
+<title>Campaign Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a GM's map table — act columns left to right, cards in play order, an editor sheet slides over from the right. */
+:root {
+  --bg: #e9ece8;
+  --surface: #f8f9f6;
+  --column: #dfe3de;
+  --ink: #1c2629;
+  --muted: #5b676a;
+  --line: #c7cdc8;
+  --accent: #2c7465;
+  --accent-ink: #ffffff;
+  --cut: #9a3d3a;
+  --played: #4b6b8f;
+  --k-scene: #2c7465; --k-npc: #8a5a1f; --k-location: #4b6b8f; --k-item: #7a4f86; --k-lore: #5b676a; --k-town: #a04a2c;
+  --good: #3f7a3a; --warn: #9a6a12;
+  --c-red: #b4473f; --c-amber: #c48a1c; --c-green: #4f8a3a; --c-teal: #2c8c86; --c-blue: #3f6fb4; --c-violet: #7b55a8; --c-slate: #5b676a;
+  --shadow: 0 1px 2px rgba(20,30,32,.08), 0 2px 8px rgba(20,30,32,.06);
+  --f-display: "IM Fell English SC", "Iowan Old Style", Georgia, serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121719; --surface: #1d2427; --column: #171d20; --ink: #e3e8e6; --muted: #98a4a6; --line: #2e383b;
+  --accent: #5cb8a3; --accent-ink: #0c1413; --cut: #e0807b; --played: #8fb0d6;
+  --k-scene: #5cb8a3; --k-npc: #d7a35c; --k-location: #8fb0d6; --k-item: #c39bd0; --k-lore: #98a4a6; --k-town: #e0957a;
+  --good: #86c06b; --warn: #e2b04f;
+  --c-red: #e07a70; --c-amber: #e2b04f; --c-green: #86c06b; --c-teal: #5cc2bb; --c-blue: #7fa6e3; --c-violet: #b495dc; --c-slate: #98a4a6;
+  --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121719; --surface: #1d2427; --column: #171d20; --ink: #e3e8e6; --muted: #98a4a6; --line: #2e383b;
+  --accent: #5cb8a3; --accent-ink: #0c1413; --cut: #e0807b; --played: #8fb0d6;
+  --k-scene: #5cb8a3; --k-npc: #d7a35c; --k-location: #8fb0d6; --k-item: #c39bd0; --k-lore: #98a4a6; --k-town: #e0957a;
+  --good: #86c06b; --warn: #e2b04f;
+  --c-red: #e07a70; --c-amber: #e2b04f; --c-green: #86c06b; --c-teal: #5cc2bb; --c-blue: #7fa6e3; --c-violet: #b495dc; --c-slate: #98a4a6;
+  --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { padding: 20px 20px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 24px; justify-content: space-between; }
+.board-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#board-pick { font: 500 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 100%; }
+.btn.small { font-size: 12px; padding: 4px 8px; font-weight: 600; color: var(--muted); }
+.save-state { color: var(--muted); }
+.save-state::before { content: "· "; }
+.save-state:empty::before { content: ""; }
+.save-state[data-state="saving"] { color: var(--accent); }
+.board-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.board-row { width: 100%; display: flex; justify-content: space-between; gap: 10px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 10px 12px; font: 17px var(--f-display); }
+.board-row:hover { border-color: var(--muted); }
+.board-row[aria-current="true"] { border-color: var(--accent); }
+.board-row em { font: 11px var(--f-mono); font-style: normal; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+#campaign { font: 34px/1.1 var(--f-display); border: 0; background: transparent; padding: 2px 0; field-sizing: content; min-width: 8ch; max-width: 100%; border-bottom: 1px dashed transparent; }
+#campaign:hover, #campaign:focus { border-bottom-color: var(--line); outline: none; }
+.stats { font: 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 6px; font-weight: 600; font-size: 14px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--cut); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 11px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .n { font: 11px var(--f-mono); opacity: .7; }
+#search { flex: 1 1 200px; max-width: 320px; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 10px; }
+.notice { font-size: 13px; color: var(--muted); }
+
+.board-scroll { overflow-x: auto; padding-bottom: 8px; }
+.board { display: flex; gap: 14px; align-items: flex-start; min-height: 300px; }
+.col { flex: 0 0 290px; background: var(--column); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.col.over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+.col-head { display: flex; align-items: center; gap: 6px; }
+.col-num { font: 500 11px var(--f-mono); color: var(--muted); letter-spacing: .08em; }
+.col-name { flex: 1; min-width: 0; font: 19px/1.2 var(--f-display); background: transparent; border: 0; padding: 2px 4px; border-radius: 4px; }
+.col-name:hover, .col-name:focus { background: var(--surface); outline: none; }
+.col-name[readonly] { pointer-events: none; }
+.col-count { font: 11px var(--f-mono); color: var(--muted); }
+.col-menu { font-size: 12px; color: var(--muted); display: flex; gap: 4px; flex-wrap: wrap; }
+.col-menu button { background: none; border: 0; color: var(--muted); padding: 2px 4px; text-decoration: underline; text-underline-offset: 2px; }
+.add-card { border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 8px; font-size: 13px; text-align: left; }
+.add-card:hover { color: var(--ink); border-color: var(--muted); }
+
+.card { background: var(--surface); border-radius: 8px; box-shadow: var(--shadow); padding: 10px 12px; display: grid; gap: 6px; cursor: pointer; border: 1px solid transparent; text-align: left; width: 100%; }
+.card:hover { border-color: var(--line); }
+.card.dragging { opacity: .4; }
+.card.drop-before { box-shadow: 0 -3px 0 var(--accent), var(--shadow); }
+.card.is-cut { opacity: .55; }
+.card.is-cut .c-title { text-decoration: line-through; }
+.c-top { display: flex; align-items: center; gap: 8px; }
+.kind { font: 500 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--kc); display: inline-flex; align-items: center; gap: 5px; }
+.kind::before { content: ""; width: 8px; height: 8px; transform: rotate(45deg); background: var(--kc); display: inline-block; }
+.status { margin-left: auto; font: 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; border: 1px solid currentColor; }
+.status.played { color: var(--played); }
+.status.cut { color: var(--cut); }
+.c-title { font-weight: 700; font-size: 15px; line-height: 1.3; text-wrap: balance; }
+.c-body { font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.c-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font: 11px var(--f-mono); color: var(--muted); }
+.tag::before { content: "#"; opacity: .6; }
+.c-gm { font: 11px var(--f-mono); color: var(--muted); }
+
+.empty { padding: 32px 20px; text-align: center; color: var(--muted); display: grid; gap: 12px; justify-items: center; }
+.empty h2 { font: 26px var(--f-display); color: var(--ink); margin: 0; }
+
+/* Sheets */
+.scrim { position: fixed; inset: 0; background: rgba(10,16,18,.35); z-index: 10; }
+.sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); background: var(--surface); z-index: 11; box-shadow: -8px 0 24px rgba(0,0,0,.18); display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 8px; gap: 12px; }
+.sheet-head h2 { font: 24px var(--f-display); margin: 0; }
+.sheet-body { overflow-y: auto; padding: 8px 20px 20px; display: grid; gap: 14px; }
+.sheet-foot { padding: 12px 20px 16px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sheet-foot .spacer { flex: 1; }
+label.f { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+label.f input, label.f select, label.f textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 8px 10px; font-size: 15px; font-weight: 400; color: var(--ink); width: 100%; }
+label.f textarea { resize: vertical; min-height: 110px; line-height: 1.5; }
+#f-title { font: 22px var(--f-display); }
+.row3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.gm-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 6px; background: color-mix(in srgb, var(--k-npc) 6%, transparent); }
+.hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+.confirm { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--cut); flex-wrap: wrap; }
+
+.steps { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; }
+.steps li::before { counter-increment: s; content: counter(s); font: 500 12px/26px var(--f-mono); width: 26px; height: 26px; text-align: center; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); }
+.steps li > div { min-width: 0; display: grid; gap: 6px; }
+.steps strong { font-size: 15px; }
+code, .mono { font-family: var(--f-mono); font-size: 12.5px; }
+code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+textarea.code { font: 12px/1.4 var(--f-mono); width: 100%; min-height: 80px; border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 8px; color: var(--ink); word-break: break-all; }
+.section-title { font: 18px var(--f-display); margin: 6px 0 0; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+.ok { color: var(--accent); font-size: 13px; }
+.err { color: var(--cut); font-size: 13px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; font-weight: 600; font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+.canvas-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+.canvas-bar .spacer { flex: 1; }
+.zoom { display: inline-flex; align-items: center; gap: 6px; }
+.zoom .btn { padding: 4px 10px; }
+.zoom .mono { min-width: 4ch; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+.canvas-scroll { overflow: auto; height: calc(100vh - 230px); min-height: 420px; border: 1px solid var(--line); border-radius: 10px;
+  background-color: var(--column);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--muted) 35%, transparent) 1px, transparent 1.2px);
+  background-size: 24px 24px; }
+.canvas-sizer { position: relative; }
+.canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.ccard { position: absolute; background: var(--surface); border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.ccard:hover { border-color: var(--muted); }
+.ccard.moving { cursor: grabbing; box-shadow: 0 8px 24px rgba(0,0,0,.22); }
+.ccard.is-cut { opacity: .55; }
+.ccard.is-cut .c-title { text-decoration: line-through; }
+.ccard .c-body { -webkit-line-clamp: unset; display: block; flex: 1; min-height: 0; overflow: hidden; }
+.ccard .c-act { font: 10px var(--f-mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ccard .grip { position: absolute; right: 0; bottom: 0; width: 20px; height: 20px; cursor: nwse-resize; touch-action: none;
+  background: linear-gradient(135deg, transparent 50%, var(--line) 50%, var(--line) 58%, transparent 58%, transparent 70%, var(--line) 70%, var(--line) 78%, transparent 78%); }
+.ccard .grip:hover { background-color: color-mix(in srgb, var(--accent) 15%, transparent); }
+.ccard.dim { opacity: .18; }
+
+.f-set { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+.f-set legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0; margin-bottom: 6px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); background: var(--sw); padding: 0; position: relative; }
+.sw[data-c=""] { background: var(--surface); }
+.sw[data-c=""]::after { content: ""; position: absolute; left: 50%; top: 3px; bottom: 3px; width: 2px; background: var(--muted); transform: translateX(-50%) rotate(45deg); }
+.sw[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.pic-preview { width: 100%; max-height: 220px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.link-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 13px; max-width: 100%; }
+.link-chip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-chip em { color: var(--muted); font-style: normal; }
+.link-chip button { border: 0; background: none; color: var(--muted); padding: 0 6px; font-size: 15px; line-height: 1; }
+.link-add { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 6px; }
+.link-add select, .link-add input { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 7px 8px; font-size: 14px; min-width: 0; }
+
+.c-img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 5px; display: block; pointer-events: none; }
+.ccard .c-img { aspect-ratio: auto; flex: 1 1 40%; min-height: 40px; max-height: 70%; height: 100%; }
+.has-color { background: color-mix(in srgb, var(--cc) 14%, var(--surface)) !important; border-color: color-mix(in srgb, var(--cc) 60%, var(--line)) !important; }
+.c-links { font-size: 12px; color: var(--muted); }
+.wires { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.wires path { fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.wires .wl { font: 12px var(--f-body); fill: var(--ink); paint-order: stroke; stroke: var(--column); stroke-width: 4px; stroke-linejoin: round; }
+.wires marker path { fill: var(--muted); stroke: none; }
+
+/* Sticky notes: deliberately paper-coloured in both themes, with their own dark ink. */
+:root { --n-ink: #2b2a22; --n-yellow: #f7e58a; --n-pink: #f6b8c4; --n-green: #bfe3a6; --n-blue: #b5d6f2; --n-orange: #f8c38c; }
+.sticky { position: absolute; background: var(--nc, var(--n-yellow)); color: var(--n-ink); border-radius: 3px 3px 3px 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.18), 0 8px 18px rgba(0,0,0,.12); display: flex; flex-direction: column; touch-action: none; }
+.sticky.moving { box-shadow: 0 12px 28px rgba(0,0,0,.3); }
+.n-bar { display: flex; align-items: center; gap: 4px; padding: 4px 4px 2px 8px; cursor: grab; min-height: 26px; }
+.n-bar .dots { flex: 1; height: 8px; background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1.4px); background-size: 6px 6px; opacity: .6; }
+.n-bar button { border: 0; background: transparent; color: var(--n-ink); padding: 2px 5px; border-radius: 4px; font-size: 13px; line-height: 1; opacity: .65; }
+.n-bar button:hover, .n-bar button:focus-visible { opacity: 1; background: rgba(0,0,0,.08); }
+.n-bar .n-sw { width: 14px; height: 14px; border-radius: 50%; padding: 0; border: 1.5px solid rgba(0,0,0,.35); background: var(--nn); opacity: 1; }
+.n-bar .n-del.armed { opacity: 1; background: #9a3d3a; color: #fff; padding: 2px 6px; font-size: 11px; }
+.sticky textarea { flex: 1; min-height: 0; border: 0; resize: none; background: transparent; color: var(--n-ink); padding: 2px 10px 14px; font: 15px/1.4 var(--f-body); outline: none; color-scheme: light; }
+.sticky textarea::placeholder { color: rgba(43,42,34,.5); }
+.sticky .grip { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 55%, rgba(0,0,0,.18) 55%); border-radius: 0 0 3px 0; }
+
+@media (max-width: 640px) {
+  .link-add { grid-template-columns: 1fr; }
+  .canvas-scroll { height: 70vh; }
+  .wrap { padding: 16px 16px 40px; }
+  #campaign { font-size: 28px; }
+  .board { flex-direction: column; align-items: stretch; }
+  .col { flex-basis: auto; }
+  .row3 { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet { animation: slide .18s ease-out; }
+  @keyframes slide { from { transform: translateX(24px); opacity: .6; } }
+}
+/*__MODULES_CSS__*/
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="board-switch">
+        <select id="board-pick" aria-label="Switch campaign"></select>
+        <button class="btn ghost small" id="btn-boards">New, copy or delete…</button>
+      </div>
+      <input id="campaign" aria-label="Campaign name" value="My Campaign">
+      <div class="stats"><span id="stats">Loading…</span> <span class="save-state" id="save-state"></span></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btn-roll20">Roll20</button>
+      <button class="btn" id="btn-backup">Backup</button>
+      <button class="btn" id="btn-act">+ Act</button>
+      <button class="btn" id="btn-note">+ Note</button>
+      <button class="btn primary" id="btn-card">+ Card</button>
+    </div>
+  </header>
+
+  <nav class="tabs-wrap" aria-label="Sections"><div class="tabs" id="tabs" role="tablist"></div></nav>
+
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="View">
+      <button id="v-canvas" aria-pressed="true">Table</button>
+      <button id="v-board" aria-pressed="false">Columns</button>
+      <button id="v-archive" aria-pressed="false">Archive</button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Show"></div>
+    <input id="search" type="search" placeholder="Search titles, text, tags" aria-label="Search">
+  </div>
+  <div class="notice" id="notice" hidden></div>
+
+  <div class="archive" id="archive-wrap" hidden></div>
+  <div class="board-scroll" id="board-wrap" hidden><div class="board" id="board"></div></div>
+
+  <div id="canvas-area">
+    <div class="canvas-bar">
+      <span class="hint">Drag a card to move it. Drag its bottom-right corner to resize. Click to edit.</span>
+      <span class="spacer"></span>
+      <button class="btn" id="link-mode" aria-pressed="false" title="Click a card, then the card to connect it to">+ Link</button>
+      <button class="btn" id="focus-mode" aria-pressed="false" title="Click a card to show only what it's linked to">Show links</button>
+      <button class="btn" id="add-note">+ Note</button>
+      <button class="btn" id="tidy" title="Lay cards out in act columns again">Tidy up</button>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button class="btn" id="z-out" aria-label="Zoom out">−</button>
+        <span class="mono" id="z-val">100%</span>
+        <button class="btn" id="z-in" aria-label="Zoom in">+</button>
+      </div>
+    </div>
+    <div class="link-status" id="link-status" hidden></div>
+    <div class="canvas-scroll" id="canvas-scroll"><div class="canvas-sizer" id="canvas-sizer"><div class="canvas" id="canvas"></div></div></div>
+  </div>
+
+  <div id="module" hidden></div>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<aside class="sheet" id="editor" hidden aria-label="Edit card">
+  <div class="sheet-head"><h2 id="ed-head">Card</h2><button class="btn ghost" data-close>Close</button></div>
+  <form class="sheet-body" id="ed-form" autocomplete="off">
+    <label class="f">Title<input id="f-title" required placeholder="The bridge collapses"></label>
+    <div class="row3">
+      <label class="f">Type<select id="f-kind"></select></label>
+      <label class="f">Act<select id="f-act"></select></label>
+      <label class="f">Status<select id="f-status">
+        <option value="planned">Planned</option><option value="played">Played</option><option value="cut">Cut</option>
+      </select></label>
+    </div>
+    <label class="f">What happens / what players see<textarea id="f-body" rows="7" placeholder="Read-aloud text, the beats of the scene, the NPC's look and voice…"></textarea></label>
+    <div class="gm-box" id="gm-wrap">
+      <label class="f">GM notes <span class="hint">Only you see these. They go into GM Notes in Roll20.</span><textarea id="f-gm" rows="5" placeholder="Secrets, DCs, stat blocks, what happens if they fail…"></textarea></label>
+    </div>
+    <label class="f">Tags <span class="hint">Separate with commas</span><input id="f-tags" placeholder="trap, villain, act-climax"></label>
+
+    <fieldset class="f-set">
+      <legend>Colour</legend>
+      <div class="swatches" id="f-colors"></div>
+    </fieldset>
+
+    <fieldset class="f-set" id="pic-set">
+      <legend>Picture</legend>
+      <img id="f-img" class="pic-preview" alt="" hidden>
+      <div class="actions">
+        <label class="btn" id="pic-pick">Add picture<input type="file" id="f-file" accept="image/*" hidden></label>
+        <button type="button" class="btn danger" id="pic-remove" hidden>Remove picture</button>
+        <span class="hint" id="pic-msg"></span>
+      </div>
+    </fieldset>
+
+    <fieldset class="f-set">
+      <legend>Links to other cards</legend>
+      <div class="links" id="f-links"></div>
+      <div class="link-add" id="link-add">
+        <select id="f-link-to" aria-label="Card to link to"></select>
+        <input id="f-link-label" placeholder="Label, e.g. betrays, leads to" aria-label="Link label">
+        <button type="button" class="btn" id="link-btn">Link</button>
+      </div>
+    </fieldset>
+    <div class="actions" id="ed-move">
+      <button type="button" class="btn" id="mv-up">Move earlier</button>
+      <button type="button" class="btn" id="mv-down">Move later</button>
+    </div>
+  </form>
+  <div class="sheet-foot">
+    <button class="btn danger" id="ed-delete" type="button">Delete</button>
+    <button class="btn" id="ed-archive" type="button" title="Take it off the board. Bring it back any time from Archive.">Archive</button>
+    <span class="confirm" id="ed-confirm" hidden>Delete this card for good?
+      <button class="btn danger" id="ed-delete-yes" type="button">Delete</button>
+      <button class="btn" id="ed-delete-no" type="button">Keep</button></span>
+    <span class="spacer"></span>
+    <button class="btn" data-close type="button">Cancel</button>
+    <button class="btn primary" id="ed-save" type="submit" form="ed-form">Save</button>
+  </div>
+</aside>
+
+<aside class="sheet" id="roll20" hidden aria-label="Roll20">
+  <div class="sheet-head"><h2>Send to Roll20</h2><button class="btn ghost" data-close>Close</button></div>
+  <div class="sheet-body">
+    <p class="hint" style="font-size:14px;margin:0">Roll20 doesn't let outside websites connect to a game, so the bridge is a small Mod script that runs inside Roll20. Mod scripts need a Roll20 Pro subscription. Scenes, places, items and lore become handouts; NPCs become characters, with their stat block, role and voice in the Bio. Everything arrives hidden from players.</p>
+    <p class="hint" style="margin:0">Portraits: Roll20 doesn't let scripts upload pictures. On the NPC's page, click <b>Download</b> under the portrait, then drag the file onto the character's avatar in Roll20. If you installed the bridge before NPC stat blocks existed, paste the script again to update it.</p>
+    <ol class="steps">
+      <li><div><strong>Install the bridge once</strong>
+        <span class="hint">In your game: Settings → Mod (API) Scripts → New Script. Paste the script, name it Storyboard Bridge, save.</span>
+        <div class="actions"><button class="btn" id="copy-script">Copy script</button><button class="btn" id="dl-script">Download script</button></div></div></li>
+      <li><div><strong>Copy your board as a Roll20 code</strong>
+        <span class="hint" id="code-size"></span>
+        <div class="actions"><button class="btn primary" id="copy-code">Copy Roll20 code</button></div></div></li>
+      <li><div><strong>Paste it into Roll20</strong>
+        <span class="hint">Open the handout named <code>Storyboard Import</code> in your journal (the script creates it). Edit it and paste the code into GM Notes, replacing anything there. Save.</span></div></li>
+      <li><div><strong>Run the import</strong>
+        <span class="hint">Type <code>!storyboard import</code> in Roll20 chat. Run it again whenever you update the board; it updates the same entries instead of making copies.</span></div></li>
+    </ol>
+    <h3 class="section-title">Bring changes back</h3>
+    <p class="hint" style="margin:0">Edited text in Roll20? Type <code>!storyboard export</code> there, copy the GM Notes of the <code>Storyboard Export</code> handout, and paste it here.</p>
+    <textarea class="code" id="r20-in" placeholder="Paste the code from Storyboard Export"></textarea>
+    <div class="actions"><button class="btn" id="r20-apply">Apply changes</button><span id="r20-msg"></span></div>
+  </div>
+</aside>
+
+<aside class="sheet" id="tabs-sheet" hidden aria-label="Arrange tabs">
+  <div class="sheet-head"><h2>Tabs</h2><button class="btn ghost" data-close>Close</button></div>
+  <div class="sheet-body">
+    <p class="hint" style="font-size:14px;margin:0">Choose which tabs show along the top, and in what order. This is remembered in this browser.</p>
+    <ul class="tab-list" id="tabs-list"></ul>
+  </div>
+</aside>
+
+<aside class="sheet" id="boards" hidden aria-label="Campaigns">
+  <div class="sheet-head"><h2>Campaigns</h2><button class="btn ghost" data-close>Close</button></div>
+  <div class="sheet-body">
+    <p class="hint" style="font-size:14px;margin:0">Each campaign is its own board with its own acts, cards, links and notes. Everything saves as you work; press Ctrl+S (Cmd+S on a Mac) any time to make sure.</p>
+    <ul class="board-list" id="board-list"></ul>
+    <h3 class="section-title">Share or load</h3>
+    <div class="actions"><button class="btn" id="bd-download">Download this campaign</button></div>
+    <label class="f">Load a campaign file<input type="file" id="bd-file" accept=".json,.js,application/json,text/javascript"></label>
+    <div id="bd-file-msg"></div>
+    <h3 class="section-title">Start something</h3>
+    <div class="actions">
+      <button class="btn primary" id="bd-new">New blank campaign</button>
+      <button class="btn" id="bd-dup">Save a copy of this one</button>
+    </div>
+    <label class="f" id="bd-name-wrap" hidden>Name<input id="bd-name" placeholder="The Sunken Library"></label>
+    <div class="actions" id="bd-go-wrap" hidden><button class="btn primary" id="bd-go">Create</button><button class="btn" id="bd-cancel">Cancel</button></div>
+    <h3 class="section-title" id="bd-del-title">Delete</h3>
+    <div class="actions">
+      <button class="btn danger" id="bd-delete">Delete this campaign</button>
+      <span class="confirm" id="bd-confirm" hidden>Delete it and all its cards and notes?
+        <button class="btn danger" id="bd-delete-yes">Delete</button>
+        <button class="btn" id="bd-delete-no">Keep</button></span>
+    </div>
+    <p class="hint" id="bd-main-hint" style="margin:0">Your first campaign can be renamed but not deleted.</p>
+  </div>
+</aside>
+
+<aside class="sheet" id="backup" hidden aria-label="Backup">
+  <div class="sheet-head"><h2>Backup &amp; restore</h2><button class="btn ghost" data-close>Close</button></div>
+  <div class="sheet-body">
+    <p class="hint" id="backup-hint" style="font-size:14px;margin:0">Your board saves itself as you go. A backup file is a copy you keep, or move to another storyboard.</p>
+    <h3 class="section-title">Everything</h3>
+    <p class="hint" style="margin:0">Every campaign with its cards, pictures, GM notes, sticky notes and tabs, in one file. Use it to move your storyboard between the online and downloaded copies.</p>
+    <div class="actions"><button class="btn primary" id="dl-all">Download everything</button></div>
+    <h3 class="section-title">One campaign</h3>
+    <p class="hint" style="margin:0">A single campaign with its pictures, GM notes, sticky notes, tabs and DM Screen layout. Load it in any copy of the storyboard, or send it to someone.</p>
+    <div class="actions"><button class="btn" id="dl-json">Download this campaign</button><button class="btn" id="copy-md">Copy as notes (Markdown)</button></div>
+    <h3 class="section-title">Load a file</h3>
+    <p class="hint" style="margin:0">A campaign file or an everything file. You choose whether each campaign is added as new or updates the one already here. Nothing is removed.</p>
+    <input type="file" id="file-in" accept=".json,.js,application/json,text/javascript">
+    <span id="file-msg"></span>
+  </div>
+</aside>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const ROLL20_SCRIPT = __SCRIPT__;
+const KINDS = [
+  { id: "scene", label: "Scene", plural: "Scenes" },
+  { id: "npc", label: "NPC", plural: "NPCs" },
+  { id: "location", label: "Place", plural: "Places" },
+  { id: "town", label: "Town", plural: "Towns" },
+  { id: "item", label: "Item", plural: "Items" },
+  { id: "lore", label: "Lore", plural: "Lore" },
+];
+const KIND = Object.fromEntries(KINDS.map(k => [k.id, k]));
+const COLORS = ["", "red", "amber", "green", "teal", "blue", "violet", "slate"];
+const COLOR_NAMES = { "": "No colour", red: "Red", amber: "Amber", green: "Green", teal: "Teal", blue: "Blue", violet: "Violet", slate: "Slate" };
+const $ = s => document.querySelector(s);
+
+const S = {
+  db: null, canWrite: true, canGM: true,
+  meta: { name: "My Campaign", acts: [] },
+  cards: new Map(), gm: new Map(), notes: new Map(), noteDraft: new Map(),
+  filter: "all", q: "", editing: null, loaded: false,
+  board: (() => { try { return localStorage.getItem("sb-board") || "main"; } catch { return "main"; } })(),
+  boardList: [], mainName: "", saving: 0, savedAt: null,
+  view: (() => { try { return localStorage.getItem("sb-view") || "canvas"; } catch { return "canvas"; } })(),
+  zoom: (() => { try { return Number(localStorage.getItem("sb-zoom")) || 1; } catch { return 1; } })(),
+  pending: false,
+};
+
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+
+/* ---------- campaigns (boards) ---------- */
+function P(b = S.board) {
+  return b === "main"
+    ? { meta: "meta/campaign", cards: "cards", gm: "gm", notes: "stickies" }
+    : { meta: "boards/" + b, cards: "boards/" + b + "/cards", gm: "gmx/" + b + "/gm", notes: "gmx/" + b + "/stickies" };
+}
+function W(p) {
+  S.saving++; renderSave();
+  return Promise.resolve(p).finally(() => { S.saving--; S.savedAt = new Date(); renderSave(); });
+}
+function R(path) {
+  const d = S.db.doc(path);
+  return { set: v => W(d.set(v)), update: v => W(d.update(v)), delete: () => W(d.delete()) };
+}
+function renderSave() {
+  const el = $("#save-state"); if (!el) return;
+  if (!S.db) { el.textContent = ""; return; }
+  el.textContent = S.saving ? "Saving…" : S.savedAt ? "Saved " + S.savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "All changes save automatically";
+  el.dataset.state = S.saving ? "saving" : "saved";
+}
+let unsubs = [];
+function attachBoard(b) {
+  unsubs.forEach(u => { try { u(); } catch {} }); unsubs = [];
+  S.board = b;
+  try { localStorage.setItem("sb-board", b); } catch {}
+  S.cards = new Map(); S.gm = new Map(); S.notes = new Map(); S.noteDraft = new Map();
+  S.mod = { sessions: new Map(), plot: new Map(), combats: new Map(), screen: new Map() }; S.sel = {}; S.drafts = new Map(); S.confirm = null;
+  S.meta = { name: b === "main" ? (S.mainName || "My Campaign") : (S.boardList.find(x => x.id === b)?.name || "Campaign"), acts: [] };
+  S.loaded = false; S.filter = "all";
+  render(); renderBoards();
+  if (!S.db) { S.loaded = true; render(); return; }
+  const db = S.db, p = P(b), got = { meta: false, cards: false };
+  const live = () => S.board === b;
+  const ready = () => { if (!live()) return; if (got.meta && got.cards) S.loaded = true; render(); };
+  unsubs.push(db.doc(p.meta).onSnapshot(snap => {
+    if (!live()) return;
+    if (snap.exists) { const d = snap.data(); S.meta = { name: d.name || "My Campaign", acts: Array.isArray(d.acts) ? d.acts.map(a => ({ ...a })) : [], created: d.created || "" }; }
+    got.meta = true; ready(); renderBoards();
+  }, () => { got.meta = true; ready(); }));
+  unsubs.push(db.collection(p.cards).onSnapshot(snap => {
+    if (!live()) return;
+    const m = new Map(); snap.docs.forEach(d => m.set(d.id, { ...d.data(), id: d.id })); S.cards = m;
+    got.cards = true; ready();
+  }, () => { got.cards = true; ready(); }));
+  if (S.canGM) {
+    unsubs.push(db.collection(p.gm).onSnapshot(snap => {
+      if (!live()) return;
+      const m = new Map(); snap.docs.forEach(d => m.set(d.id, d.data().text || "")); S.gm = m; render();
+    }, () => {}));
+    unsubs.push(db.collection(p.notes).onSnapshot(snap => {
+      if (!live()) return;
+      const m = new Map(); snap.docs.forEach(d => m.set(d.id, { ...d.data(), id: d.id })); S.notes = m; render();
+    }, () => {}));
+    for (const coll of MOD_COLLS) unsubs.push(db.collection(MP(coll, b)).onSnapshot(snap => {
+      if (!live()) return;
+      const m = new Map(); snap.docs.forEach(d => m.set(d.id, { ...structuredClone(d.data()), id: d.id })); S.mod[coll] = m;
+      render();
+    }, () => {}));
+  }
+}
+async function flushNotes() {
+  const jobs = [];
+  for (const [id, t] of noteTimers) { clearTimeout(t); if (S.noteDraft.has(id)) jobs.push(saveNote(id, { text: S.noteDraft.get(id) })); }
+  noteTimers.clear();
+  await Promise.all(jobs);
+}
+async function switchBoard(b) {
+  if (b === S.board) return;
+  closeSheets();
+  flushAll();
+  await flushNotes();
+  attachBoard(b);
+}
+function allBoards() { return [{ id: "main", name: S.mainName || "My Campaign" }, ...S.boardList]; }
+function renderBoards() {
+  const sel = $("#board-pick");
+  const boards = allBoards();
+  sel.innerHTML = boards.map(b => `<option value="${esc(b.id)}">${esc(b.id === S.board ? (S.meta.name || b.name) : b.name)}</option>`).join("");
+  sel.value = S.board;
+  if (sel.value !== S.board) sel.value = "main";
+  const list = $("#board-list");
+  if (list) list.innerHTML = boards.map(b => `<li><button class="board-row" data-open-board="${esc(b.id)}" aria-current="${b.id === S.board}">
+      <span>${esc(b.id === S.board ? (S.meta.name || b.name) : b.name)}</span>${b.id === S.board ? `<em>Open now</em>` : ""}</button></li>`).join("");
+  $("#bd-delete").hidden = S.board === "main" || !S.canWrite;
+  $("#bd-confirm").hidden = true;
+  for (const id of ["#bd-new", "#bd-dup"]) $(id).hidden = !S.canWrite || !S.db;
+}
+async function createBoard(name, copy) {
+  const id = uid();
+  const created = new Date().toISOString();
+  const db = S.db;
+  const p = P(id);
+  let meta = { name, acts: [], created };
+  if (copy) {
+    const actMap = new Map(S.meta.acts.map(a => [a.id, uid()]));
+    meta.acts = S.meta.acts.map(a => ({ id: actMap.get(a.id), name: a.name }));
+    const idMap = new Map([...S.cards.keys()].map(k => [k, uid()]));
+    await W(db.doc(p.meta).set(meta));
+    let n = 0;
+    for (const c of S.cards.values()) {
+      const nc = { ...c, id: idMap.get(c.id), act: actMap.get(c.act) || "", links: (c.links || []).filter(l => idMap.has(l.to)).map(l => ({ ...l, to: idMap.get(l.to) })) };
+      await W(db.doc(p.cards + "/" + nc.id).set(nc));
+      const gm = S.gm.get(c.id);
+      if (S.canGM && gm) await W(db.doc(p.gm + "/" + nc.id).set({ text: gm }));
+      if (++n % 10 === 0) toast(`Copying… ${n} of ${S.cards.size} cards`);
+    }
+    await copyModules(id, idMap);
+    if (S.canGM) for (const note of S.notes.values()) {
+      const nid = uid();
+      const text = S.noteDraft.has(note.id) ? S.noteDraft.get(note.id) : note.text;
+      await W(db.doc(p.notes + "/" + nid).set({ ...note, id: nid, text }));
+    }
+  } else {
+    await W(db.doc(p.meta).set(meta));
+  }
+  if (!S.boardList.some(b => b.id === id)) S.boardList = [...S.boardList, { id, name, created }];
+  await switchBoard(id);
+  toast(copy ? `Saved a copy as “${name}”` : `Started “${name}”`);
+}
+async function deleteBoard() {
+  const b = S.board; if (b === "main") return;
+  const p = P(b), db = S.db, name = S.meta.name;
+  await flushNotes();
+  await switchBoard("main");
+  try {
+    for (const coll of [p.cards, p.gm, p.notes]) {
+      const snap = await db.collection(coll).get();
+      for (const d of snap.docs) await W(db.doc(coll + "/" + d.id).delete());
+    }
+    await deleteModules(b);
+    await W(db.doc(p.meta).delete());
+    S.boardList = S.boardList.filter(x => x.id !== b); renderBoards();
+    toast(`Deleted “${name}”`);
+  } catch (e) { handleWriteError(e); }
+}
+
+/* ---------- persistence ---------- */
+async function saveMeta() {
+  if (!S.db) return;
+  try { await R(P().meta).set(S.board === "main" ? { name: S.meta.name, acts: S.meta.acts } : { name: S.meta.name, acts: S.meta.acts, created: S.meta.created || "" }); }
+  catch (e) { handleWriteError(e); }
+}
+async function saveCard(c, gmText) {
+  S.cards.set(c.id, c);
+  if (gmText !== undefined) S.gm.set(c.id, gmText);
+  render();
+  if (!S.db) return;
+  try {
+    await R(P().cards + "/" + c.id).set(c);
+    if (gmText !== undefined && S.canGM) await R(P().gm + "/" + c.id).set({ text: gmText });
+  } catch (e) { handleWriteError(e); }
+}
+async function deleteCard(id) {
+  S.cards.delete(id); S.gm.delete(id); render();
+  if (!S.db) return;
+  try { await R(P().cards + "/" + id).delete(); if (S.canGM) await R(P().gm + "/" + id).delete(); }
+  catch (e) { handleWriteError(e); }
+}
+function handleWriteError(e) {
+  if (e && e.code === "invalid_argument") { S.canWrite = false; showNotice("You can view this board but not change it."); render(); }
+  else if (e && e.code === "quota_exceeded") toast("The board is full. Delete some cards to add more.");
+  else toast("Couldn't save just now. Try again in a moment.");
+}
+function showNotice(msg) { const n = $("#notice"); n.textContent = msg; n.hidden = !msg; }
+
+/* ---------- derived ---------- */
+function actIndex() { return new Map(S.meta.acts.map((a, i) => [a.id, i])); }
+function columns() {
+  const idx = actIndex();
+  const cols = S.meta.acts.map(a => ({ id: a.id, name: a.name, cards: [] }));
+  const loose = { id: "", name: "Loose ends", cards: [], loose: true };
+  for (const c of S.cards.values()) {
+    if (c.archived) continue;
+    const i = idx.get(c.act);
+    (i === undefined ? loose : cols[i]).cards.push(c);
+  }
+  for (const col of [...cols, loose]) col.cards.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.title).localeCompare(b.title));
+  if (loose.cards.length || !cols.length) cols.push(loose);
+  return cols;
+}
+function matches(c) {
+  if (S.filter !== "all" && c.kind !== S.filter) return false;
+  if (!S.q) return true;
+  const hay = [c.title, c.body, (c.tags || []).join(" "), S.canGM ? S.gm.get(c.id) : ""].join(" ").toLowerCase();
+  return hay.includes(S.q);
+}
+
+/* ---------- render ---------- */
+function render() {
+  $("#campaign").value = document.activeElement === $("#campaign") ? $("#campaign").value : S.meta.name;
+  $("#campaign").readOnly = !S.canWrite;
+  if (!CSS.supports?.("field-sizing", "content")) $("#campaign").size = Math.max(10, $("#campaign").value.length + 2);
+  const onBoard = S.tab === "board" || !S.tab;
+  for (const id of ["#btn-act", "#btn-card"]) $(id).hidden = !S.canWrite || !onBoard;
+  $("#btn-note").hidden = !S.canGM || !S.loaded || !onBoard;
+  const all = [...S.cards.values()].filter(c => !c.archived);
+  const archivedN = S.cards.size - all.length;
+  const played = all.filter(c => c.status === "played").length;
+  $("#stats").textContent = S.loaded
+    ? `${S.meta.acts.length} act${S.meta.acts.length === 1 ? "" : "s"} · ${all.length} card${all.length === 1 ? "" : "s"} · ${played} played`
+    : "Loading…";
+
+  const counts = Object.fromEntries(KINDS.map(k => [k.id, 0]));
+  all.forEach(c => counts[c.kind] = (counts[c.kind] || 0) + 1);
+  $("#chips").innerHTML = [`<button class="chip" data-filter="all" aria-pressed="${S.filter === "all"}">All <span class="n">${all.length}</span></button>`]
+    .concat(KINDS.map(k => `<button class="chip" data-filter="${k.id}" aria-pressed="${S.filter === k.id}" style="--kc:var(--k-${k.id})">${k.plural} <span class="n">${counts[k.id]}</span></button>`)).join("");
+
+  renderTabs();
+  if (S.tab !== "board") {
+    $(".toolbar").hidden = true; $("#board-wrap").hidden = true; $("#canvas-area").hidden = true; $("#module").hidden = false;
+    renderModule();
+    return;
+  }
+  $(".toolbar").hidden = false; $("#module").hidden = true;
+  const board = $("#board");
+  const isEmpty = S.loaded && !all.length && !S.meta.acts.length && !S.notes.size;
+  const useCanvas = S.view === "canvas" && S.loaded && !isEmpty;
+  const useArchive = S.view === "archive" && S.loaded;
+  $("#board-wrap").hidden = useCanvas || useArchive;
+  $("#canvas-area").hidden = !useCanvas;
+  $("#archive-wrap").hidden = !useArchive;
+  $("#v-canvas").setAttribute("aria-pressed", S.view === "canvas");
+  $("#v-board").setAttribute("aria-pressed", S.view === "board");
+  $("#v-archive").setAttribute("aria-pressed", S.view === "archive");
+  $("#v-archive").innerHTML = `Archive${archivedN ? ` <span class="n">${archivedN}</span>` : ""}`;
+  if (useArchive) { renderArchive(); return; }
+  if (isEmpty) {
+    board.innerHTML = `<div class="empty" style="flex:1"><h2>An empty table</h2>
+      <p>Start with an act (a chapter or session arc), then add scenes, NPCs, places, items and lore to it.</p>
+      ${S.canWrite ? `<div class="actions"><button class="btn" data-act-new>+ First act</button><button class="btn primary" data-card-new="">+ First card</button></div>` : ""}</div>`;
+    return;
+  }
+  if (!S.loaded) { board.innerHTML = `<div class="empty" style="flex:1"><p>Opening your board…</p></div>`; return; }
+  if (useCanvas) { renderCanvas(); return; }
+
+  const cols = columns();
+  board.innerHTML = cols.map((col, ci) => {
+    const shown = col.cards.filter(matches);
+    const n = col.loose ? "—" : String(ci + 1).padStart(2, "0");
+    return `<section class="col" data-col="${esc(col.id)}" aria-label="${esc(col.name)}">
+      <div class="col-head"><span class="col-num">${n}</span>
+        <input class="col-name" data-act-name="${esc(col.id)}" value="${esc(col.name)}" aria-label="Act name" ${col.loose || !S.canWrite ? "readonly" : ""}>
+        <span class="col-count">${shown.length}${shown.length !== col.cards.length ? "/" + col.cards.length : ""}</span></div>
+      ${!col.loose && S.canWrite ? `<div class="col-menu">
+        ${ci > 0 ? `<button data-act-move="${col.id}" data-dir="-1">← Move</button>` : ""}
+        ${ci < S.meta.acts.length - 1 ? `<button data-act-move="${col.id}" data-dir="1">Move →</button>` : ""}
+        <button data-act-del="${col.id}">Remove act</button></div>` : ""}
+      ${shown.map(cardHtml).join("")}
+      ${S.canWrite ? `<button class="add-card" data-card-new="${esc(col.id)}">+ Add a card</button>` : ""}
+    </section>`;
+  }).join("");
+}
+function colorAttrs(c) { return c.color && COLORS.includes(c.color) ? { cls: "has-color", style: `--cc:var(--c-${c.color});` } : { cls: "", style: "" }; }
+function blobUrl(id) { return window.__blobUrl ? window.__blobUrl(id) : "/_blob/" + id; }
+function imgHtml(c) { return c.imageId && /^[0-9a-f]{32}$/.test(c.imageId) && blobUrl(c.imageId) ? `<img class="c-img" src="${blobUrl(c.imageId)}" alt="" draggable="false" loading="lazy">` : ""; }
+function linkSummary(c) {
+  const names = (c.links || []).map(l => S.cards.get(l.to)).filter(Boolean).map(t => t.title);
+  return names.length ? `<div class="c-links">→ ${esc(names.join(", "))}</div>` : "";
+}
+function cardHtml(c) {
+  const k = KIND[c.kind] || KIND.lore;
+  const gm = S.canGM && (S.gm.get(c.id) || "").trim();
+  const col = colorAttrs(c);
+  return `<button class="card ${col.cls} ${c.status === "cut" ? "is-cut" : ""}" data-card="${esc(c.id)}" draggable="${S.canWrite}" style="--kc:var(--k-${k.id});${col.style}">
+    ${imgHtml(c)}
+    <div class="c-top"><span class="kind">${k.label}</span>${c.status !== "planned" ? `<span class="status ${c.status}">${c.status}</span>` : ""}</div>
+    <div class="c-title">${esc(c.title || "Untitled")}</div>
+    ${c.body ? `<div class="c-body">${esc(c.body)}</div>` : ""}
+    ${(c.tags || []).length ? `<div class="c-tags">${c.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
+    ${linkSummary(c)}
+    ${gm ? `<div class="c-gm">GM notes ✓</div>` : ""}
+  </button>`;
+}
+
+/* ---------- sheets ---------- */
+function openSheet(id) { $("#scrim").hidden = false; document.querySelectorAll("aside.sheet").forEach(el => el.hidden = "#" + el.id !== id); }
+function closeSheets() { discardUploads(null); $("#scrim").hidden = true; document.querySelectorAll("aside.sheet").forEach(el => el.hidden = true); S.editing = null; }
+document.addEventListener("click", e => { if (e.target.closest("[data-close]") || e.target === $("#scrim")) closeSheets(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheets(); });
+
+function fillActSelect(sel, value) {
+  $("#f-act").innerHTML = S.meta.acts.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join("") + `<option value="">Loose ends</option>`;
+  $("#f-act").value = value;
+}
+function openEditor(id, actId) {
+  const isNew = !id;
+  const c = isNew ? { id: uid(), kind: S.filter !== "all" ? S.filter : "scene", title: "", body: "", act: actId ?? (S.meta.acts[0]?.id || ""), status: "planned", tags: [], order: null } : S.cards.get(id);
+  if (!c) return;
+  S.editing = { ...c, isNew };
+  $("#ed-head").textContent = isNew ? "New card" : (S.canWrite ? "Edit card" : "Card");
+  $("#f-kind").innerHTML = KINDS.map(k => `<option value="${k.id}">${k.label}</option>`).join("");
+  $("#f-kind").value = c.kind;
+  fillActSelect($("#f-act"), c.act);
+  $("#f-status").value = c.status;
+  $("#f-title").value = c.title;
+  $("#f-body").value = c.body || "";
+  $("#f-gm").value = S.gm.get(c.id) || "";
+  $("#f-tags").value = (c.tags || []).join(", ");
+  S.editing.color = c.color || "";
+  S.editing.imageId = c.imageId || "";
+  S.editing.origImageId = c.imageId || "";
+  S.editing.links = (c.links || []).map(l => ({ ...l }));
+  S.editing.uploaded = [];
+  renderEdExtras();
+  $("#pic-set").hidden = !S.assets && !c.imageId;
+  $("#pic-pick").hidden = !S.assets || !S.canWrite;
+  $("#pic-msg").textContent = "";
+  $("#gm-wrap").hidden = !S.canGM;
+  $("#ed-move").hidden = isNew || !S.canWrite;
+  $("#ed-delete").hidden = isNew || !S.canWrite;
+  $("#ed-archive").hidden = isNew || !S.canWrite;
+  $("#ed-archive").textContent = c.archived ? "Bring back to board" : "Archive";
+  $("#ed-confirm").hidden = true;
+  $("#ed-save").hidden = !S.canWrite;
+  for (const el of $("#ed-form").querySelectorAll("input,select,textarea")) el.disabled = !S.canWrite;
+  openSheet("#editor");
+  if (S.canWrite) setTimeout(() => $("#f-title").focus(), 30);
+}
+function renderEdExtras() {
+  const ed = S.editing; if (!ed) return;
+  $("#f-colors").innerHTML = COLORS.map(c => `<button type="button" class="sw" data-c="${c}" style="${c ? `--sw:var(--c-${c})` : ""}" aria-pressed="${ed.color === c}" aria-label="${COLOR_NAMES[c]}" title="${COLOR_NAMES[c]}" ${S.canWrite ? "" : "disabled"}></button>`).join("");
+  const img = $("#f-img");
+  if (ed.imageId) { img.src = blobUrl(ed.imageId); img.hidden = false; } else { img.removeAttribute("src"); img.hidden = true; }
+  $("#pic-remove").hidden = !ed.imageId || !S.canWrite;
+  $("#pic-pick").firstChild.textContent = ed.imageId ? "Replace picture" : "Add picture";
+  $("#f-links").innerHTML = ed.links.length ? ed.links.map((l, i) => {
+    const t = S.cards.get(l.to);
+    return `<span class="link-chip"><span>→ ${esc(t ? t.title : "Deleted card")}${l.label ? ` <em>${esc(l.label)}</em>` : ""}</span>${S.canWrite ? `<button type="button" data-unlink="${i}" aria-label="Remove link">×</button>` : ""}</span>`;
+  }).join("") : `<span class="hint">No links yet.</span>`;
+  const linked = new Set(ed.links.map(l => l.to));
+  const opts = [...S.cards.values()].filter(c => c.id !== ed.id && !linked.has(c.id)).sort((a, b) => a.title.localeCompare(b.title));
+  $("#f-link-to").innerHTML = `<option value="">Connect to…</option>` + opts.map(c => `<option value="${esc(c.id)}">${esc(c.title)} (${KIND[c.kind]?.label || ""})</option>`).join("");
+  $("#link-add").hidden = !S.canWrite || !opts.length;
+}
+$("#f-colors").addEventListener("click", e => { const b = e.target.closest("[data-c]"); if (b && S.editing && S.canWrite) { S.editing.color = b.dataset.c; renderEdExtras(); } });
+$("#f-links").addEventListener("click", e => { const b = e.target.closest("[data-unlink]"); if (b && S.editing) { S.editing.links.splice(Number(b.dataset.unlink), 1); renderEdExtras(); } });
+$("#link-btn").onclick = () => {
+  const to = $("#f-link-to").value; if (!to || !S.editing) return;
+  S.editing.links.push({ to, label: $("#f-link-label").value.trim().slice(0, 40) });
+  $("#f-link-label").value = ""; renderEdExtras();
+};
+$("#pic-remove").onclick = () => { if (S.editing) { S.editing.imageId = ""; renderEdExtras(); } };
+async function shrinkImage(file) {
+  if (file.size < 1.2e6 && /^image\/(jpeg|png|webp|gif)$/.test(file.type)) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(bmp.width * scale); cv.height = Math.round(bmp.height * scale);
+    cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    return await new Promise(res => cv.toBlob(b => res(b || file), "image/jpeg", 0.85));
+  } catch { return file; }
+}
+$("#f-file").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f || !S.assets || !S.editing) return;
+  const ed = S.editing;
+  $("#pic-msg").textContent = "Uploading…";
+  try {
+    const res = await S.assets.upload(await shrinkImage(f));
+    if (S.editing !== ed) { S.assets.delete(res.id).catch(() => {}); return; }
+    ed.uploaded.push(res.id); ed.imageId = res.id;
+    $("#pic-msg").textContent = ""; renderEdExtras();
+  } catch (err) {
+    $("#pic-msg").textContent = err?.code === "quota_exceeded" ? "Picture storage is full. Remove some pictures first." :
+      err?.code === "invalid_request" ? "That file isn't a picture this page can use. Try a JPG or PNG." : "The upload didn't work. Try again.";
+  }
+};
+function discardUploads(keepId) {
+  const ed = S.editing; if (!ed || !S.assets) return;
+  for (const id of ed.uploaded || []) if (id !== keepId) S.assets.delete(id).catch(() => {});
+}
+function nextOrder(actId) {
+  const list = [...S.cards.values()].filter(c => (c.act || "") === (actId || ""));
+  return list.length ? Math.max(...list.map(c => c.order ?? 0)) + 1 : 0;
+}
+$("#ed-form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!S.canWrite || !S.editing) return;
+  const ed = S.editing;
+  const act = $("#f-act").value;
+  const c = {
+    ...(S.cards.get(ed.id) || {}),
+    id: ed.id, kind: $("#f-kind").value, title: $("#f-title").value.trim() || "Untitled",
+    body: $("#f-body").value, act, status: $("#f-status").value,
+    tags: $("#f-tags").value.split(",").map(t => t.trim().replace(/^#/, "")).filter(Boolean),
+    order: ed.isNew || ed.act !== act ? nextOrder(act) : ed.order,
+    color: ed.color || "", imageId: ed.imageId || "", links: ed.links.filter(l => l.to !== ed.id),
+    updated: new Date().toISOString(),
+  };
+  discardUploads(c.imageId);
+  ed.uploaded = [];
+  saveCard(c, S.canGM ? $("#f-gm").value : undefined);
+  closeSheets();
+  toast(ed.isNew ? "Card added" : "Saved");
+});
+$("#ed-delete").onclick = () => { $("#ed-confirm").hidden = false; $("#ed-delete").hidden = true; };
+$("#ed-delete-no").onclick = () => { $("#ed-confirm").hidden = true; $("#ed-delete").hidden = false; };
+$("#ed-delete-yes").onclick = () => {
+  const id = S.editing?.id; const img = S.cards.get(id)?.imageId;
+  closeSheets();
+  if (id) {
+    deleteCard(id);
+    for (const c of S.cards.values()) if ((c.links || []).some(l => l.to === id)) saveCard({ ...c, links: c.links.filter(l => l.to !== id) });
+    toast("Card deleted");
+  }
+};
+function moveWithin(id, dir) {
+  const c = S.cards.get(id); if (!c) return;
+  const col = columns().find(k => k.id === (c.act || "") || (k.loose && !actIndex().has(c.act)));
+  const list = col ? col.cards : [];
+  const i = list.findIndex(x => x.id === id), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const other = list[j];
+  const a = { ...c, order: other.order ?? j }, b = { ...other, order: c.order ?? i };
+  if (a.order === b.order) a.order += dir * 0.5;
+  saveCard(b); saveCard(a);
+  S.editing.order = a.order;
+}
+$("#mv-up").onclick = () => S.editing && moveWithin(S.editing.id, -1);
+$("#mv-down").onclick = () => S.editing && moveWithin(S.editing.id, 1);
+
+/* ---------- board events ---------- */
+document.addEventListener("click", e => {
+  const chip = e.target.closest("[data-filter]");
+  if (chip) { S.filter = chip.dataset.filter; render(); return; }
+  const card = e.target.closest("[data-card]");
+  if (card) { openEditor(card.dataset.card); return; }
+  const add = e.target.closest("[data-card-new]");
+  if (add) { openEditor(null, add.dataset.cardNew); return; }
+  if (e.target.closest("[data-act-new]")) { addAct(); return; }
+  const mv = e.target.closest("[data-act-move]");
+  if (mv) {
+    const i = S.meta.acts.findIndex(a => a.id === mv.dataset.actMove), j = i + Number(mv.dataset.dir);
+    if (i < 0 || j < 0 || j >= S.meta.acts.length) return;
+    const acts = S.meta.acts.slice(); [acts[i], acts[j]] = [acts[j], acts[i]];
+    S.meta.acts = acts; render(); saveMeta(); return;
+  }
+  const del = e.target.closest("[data-act-del]");
+  if (del) {
+    const id = del.dataset.actDel;
+    const n = [...S.cards.values()].filter(c => c.act === id).length;
+    const act = S.meta.acts.find(a => a.id === id);
+    S.meta.acts = S.meta.acts.filter(a => a.id !== id); render(); saveMeta();
+    toast(n ? `Removed “${act?.name}”. Its ${n} card${n === 1 ? "" : "s"} moved to Loose ends.` : `Removed “${act?.name}”.`);
+  }
+});
+document.addEventListener("change", e => {
+  const inp = e.target.closest("[data-act-name]");
+  if (inp && S.canWrite) {
+    const act = S.meta.acts.find(a => a.id === inp.dataset.actName);
+    if (act && inp.value.trim() && act.name !== inp.value.trim()) { act.name = inp.value.trim(); saveMeta(); }
+  }
+});
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("[data-act-name], #campaign")) e.target.blur(); });
+$("#campaign").addEventListener("change", () => { const v = $("#campaign").value.trim(); if (v && v !== S.meta.name && S.canWrite) { S.meta.name = v; if (S.board === "main") S.mainName = v; else { const b = S.boardList.find(x => x.id === S.board); if (b) b.name = v; } saveMeta(); renderBoards(); } });
+function addAct() {
+  const a = { id: uid(), name: `Act ${S.meta.acts.length + 1}` };
+  S.meta.acts = [...S.meta.acts, a]; render(); saveMeta();
+  setTimeout(() => { const el = document.querySelector(`[data-act-name="${a.id}"]`); if (el) { el.focus(); el.select(); } }, 30);
+}
+$("#btn-act").onclick = addAct;
+$("#btn-card").onclick = () => openEditor(null);
+$("#search").addEventListener("input", e => { S.q = e.target.value.trim().toLowerCase(); render(); });
+
+/* drag & drop */
+let dragId = null;
+document.addEventListener("dragstart", e => {
+  const card = e.target.closest?.("[data-card]"); if (!card || !S.canWrite) return;
+  dragId = card.dataset.card; card.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId);
+});
+document.addEventListener("dragend", () => { dragId = null; document.querySelectorAll(".dragging,.over,.drop-before").forEach(el => el.classList.remove("dragging", "over", "drop-before")); });
+document.addEventListener("dragover", e => {
+  if (!dragId) return;
+  const col = e.target.closest(".col"); if (!col) return;
+  e.preventDefault();
+  document.querySelectorAll(".over,.drop-before").forEach(el => el.classList.remove("over", "drop-before"));
+  col.classList.add("over");
+  const before = e.target.closest("[data-card]");
+  if (before && before.dataset.card !== dragId) before.classList.add("drop-before");
+});
+document.addEventListener("drop", e => {
+  if (!dragId) return;
+  const colEl = e.target.closest(".col"); if (!colEl) return;
+  e.preventDefault();
+  const actId = colEl.dataset.col;
+  const c = S.cards.get(dragId); if (!c) return;
+  const col = columns().find(k => k.id === actId);
+  const list = (col ? col.cards : []).filter(x => x.id !== dragId);
+  const beforeEl = e.target.closest("[data-card]");
+  let order;
+  const bi = beforeEl ? list.findIndex(x => x.id === beforeEl.dataset.card) : -1;
+  if (bi < 0) order = list.length ? (list[list.length - 1].order ?? list.length) + 1 : 0;
+  else { const prev = list[bi - 1], next = list[bi]; order = prev ? ((prev.order ?? 0) + (next.order ?? 0)) / 2 : (next.order ?? 0) - 1; }
+  saveCard({ ...c, act: actId, order, updated: new Date().toISOString() });
+});
+
+/* ---------- table (free-form canvas) ---------- */
+const DEF_W = 260, DEF_H = 160, MIN_W = 150, MIN_H = 80, GRID = 8;
+const snap = v => Math.round(v / GRID) * GRID;
+let drag = null;
+
+function layoutCards() {
+  const cols = columns();
+  const out = [];
+  cols.forEach((col, ci) => {
+    let y = 24;
+    for (const c of col.cards) {
+      const placed = typeof c.x === "number" && typeof c.y === "number";
+      const w = c.w || DEF_W, h = c.h || DEF_H;
+      out.push({ c, x: placed ? c.x : 24 + ci * (DEF_W + 40), y: placed ? c.y : y, w, h, act: col.loose ? "" : col.name });
+      if (!placed) y += h + 16;
+    }
+  });
+  return out;
+}
+const NOTE_COLORS = ["yellow", "pink", "green", "blue", "orange"];
+function noteHtml(n) {
+  const text = S.noteDraft.has(n.id) ? S.noteDraft.get(n.id) : (n.text || "");
+  const nc = NOTE_COLORS.includes(n.color) ? n.color : "yellow";
+  const next = NOTE_COLORS[(NOTE_COLORS.indexOf(nc) + 1) % NOTE_COLORS.length];
+  return `<div class="sticky" data-note="${esc(n.id)}" style="left:${n.x}px;top:${n.y}px;width:${n.w || 220}px;height:${n.h || 180}px;z-index:${n.z || 1};--nc:var(--n-${nc})">
+    <div class="n-bar" data-nbar>
+      <span class="dots" aria-hidden="true"></span>
+      <button type="button" class="n-sw" data-ncolor="${next}" style="--nn:var(--n-${next})" aria-label="Change colour" title="Change colour"></button>
+      <button type="button" class="n-del" data-ndel aria-label="Delete note" title="Delete note">✕</button>
+    </div>
+    <textarea id="note-${esc(n.id)}" data-ntext placeholder="Type a note…" aria-label="Note">${esc(text)}</textarea>
+    <div class="grip" data-grip aria-hidden="true"></div>
+  </div>`;
+}
+function renderCanvas() {
+  if (drag) { S.pending = true; return; }
+  const items = layoutCards();
+  const notes = S.canGM ? [...S.notes.values()] : [];
+  let maxX = 1600, maxY = 1000;
+  for (const it of items) { maxX = Math.max(maxX, it.x + it.w + 400); maxY = Math.max(maxY, it.y + it.h + 300); }
+  for (const n of notes) { maxX = Math.max(maxX, n.x + (n.w || 220) + 400); maxY = Math.max(maxY, n.y + (n.h || 180) + 300); }
+  const z = S.zoom;
+  const canvas = $("#canvas");
+  canvas.style.width = maxX + "px"; canvas.style.height = maxY + "px";
+  canvas.style.transform = `scale(${z})`;
+  $("#canvas-sizer").style.width = maxX * z + "px"; $("#canvas-sizer").style.height = maxY * z + "px";
+  $("#z-val").textContent = Math.round(z * 100) + "%";
+  $("#tidy").hidden = !S.canWrite;
+  $("#add-note").hidden = !S.canGM;
+  // keep typing focus across re-renders
+  const act = document.activeElement;
+  const focusNote = act && act.matches?.("[data-ntext]") ? { id: act.id, s: act.selectionStart, e: act.selectionEnd, top: act.scrollTop } : null;
+  S.boxes = new Map(items.map(it => [it.c.id, { x: it.x, y: it.y, w: it.w, h: it.h }]));
+  canvas.innerHTML = `<svg class="wires" id="wires" width="${maxX}" height="${maxY}" aria-hidden="true"></svg>` + items.map(({ c, x, y, w, h, act }) => {
+    const k = KIND[c.kind] || KIND.lore;
+    const gm = S.canGM && (S.gm.get(c.id) || "").trim();
+    const col = colorAttrs(c);
+    return `<div class="ccard ${col.cls} ${c.status === "cut" ? "is-cut" : ""} ${matches(c) ? "" : "dim"}" data-cc="${esc(c.id)}" tabindex="0" role="button" aria-label="${esc(c.title)}"
+      style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${c.z || 0};--kc:var(--k-${k.id});${col.style}">
+      ${imgHtml(c)}
+      <div class="c-top"><span class="kind">${k.label}</span>${c.status !== "planned" ? `<span class="status ${c.status}">${c.status}</span>` : ""}</div>
+      <div class="c-title">${esc(c.title || "Untitled")}</div>
+      ${c.body ? `<div class="c-body">${esc(c.body)}</div>` : `<div class="c-body"></div>`}
+      ${(c.tags || []).length ? `<div class="c-tags">${c.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : ""}
+      <div class="c-act">${esc(act || "Loose ends")}${gm ? " · GM notes ✓" : ""}</div>
+      ${S.canWrite ? `<div class="grip" data-grip aria-hidden="true"></div>` : ""}
+    </div>`;
+  }).join("") + notes.map(noteHtml).join("");
+  drawWires();
+  if (focusNote) {
+    const ta = document.getElementById(focusNote.id);
+    if (ta) { ta.focus({ preventScroll: true }); try { ta.setSelectionRange(focusNote.s, focusNote.e); } catch {} ta.scrollTop = focusNote.top; }
+  }
+}
+function edgePoint(b, tx, ty) {
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2, dx = tx - cx, dy = ty - cy;
+  if (!dx && !dy) return [cx, cy];
+  const s = Math.min(Math.abs((b.w / 2 + 6) / (dx || 1e-9)), Math.abs((b.h / 2 + 6) / (dy || 1e-9)));
+  return [cx + dx * s, cy + dy * s];
+}
+function drawWires() {
+  const svg = document.getElementById("wires"); if (!svg || !S.boxes) return;
+  let out = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>`;
+  for (const c of S.cards.values()) {
+    const a = S.boxes.get(c.id); if (!a) continue;
+    for (const l of c.links || []) {
+      const b = S.boxes.get(l.to); if (!b) continue;
+      const [x1, y1] = edgePoint(a, b.x + b.w / 2, b.y + b.h / 2);
+      const [x2, y2] = edgePoint(b, a.x + a.w / 2, a.y + a.h / 2);
+      out += `<path d="M${x1},${y1} L${x2},${y2}" marker-end="url(#arrow)"/>`;
+      if (l.label) out += `<text class="wl" x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 4}" text-anchor="middle">${esc(l.label)}</text>`;
+    }
+  }
+  svg.innerHTML = out;
+}
+async function savePlacement(id, fields) {
+  const c = S.cards.get(id); if (!c) return;
+  S.cards.set(id, { ...c, ...fields });
+  if (!S.db) return;
+  try { await R(P().cards + "/" + id).update(fields); } catch (e) { handleWriteError(e); }
+}
+async function saveNote(id, fields) {
+  const n = S.notes.get(id); if (!n) return;
+  S.notes.set(id, { ...n, ...fields });
+  if (!S.db) return;
+  try { await R(P().notes + "/" + id).set(S.notes.get(id)); } catch (e) { handleWriteError(e); }
+}
+function topZ() { return Math.max(0, ...[...S.cards.values()].map(c => c.z || 0), ...[...S.notes.values()].map(n => n.z || 0)) + 1; }
+async function addNote() {
+  if (S.view !== "canvas") setView("canvas");
+  const sc = $("#canvas-scroll");
+  const n = { id: uid(), text: "", color: "yellow", w: 220, h: 180, z: topZ(),
+    x: snap(Math.max(16, (sc.scrollLeft + sc.clientWidth / 2) / S.zoom - 110 + (Math.random() * 40 - 20))),
+    y: snap(Math.max(16, (sc.scrollTop + sc.clientHeight / 2) / S.zoom - 90 + (Math.random() * 40 - 20))) };
+  S.notes.set(n.id, n); render();
+  const ta = document.getElementById("note-" + n.id); if (ta) ta.focus({ preventScroll: true });
+  if (S.db) { try { await R(P().notes + "/" + n.id).set(n); } catch (e) { handleWriteError(e); } }
+}
+$("#add-note").onclick = addNote;
+$("#btn-note").onclick = () => { if (S.view !== "canvas") setView("canvas"); setTimeout(addNote, 0); };
+const noteTimers = new Map();
+const canvasEl = $("#canvas");
+canvasEl.addEventListener("input", e => {
+  const ta = e.target.closest("[data-ntext]"); if (!ta) return;
+  const id = ta.closest("[data-note]").dataset.note;
+  S.noteDraft.set(id, ta.value);
+  clearTimeout(noteTimers.get(id));
+  noteTimers.set(id, setTimeout(async () => {
+    const text = S.noteDraft.get(id);
+    await saveNote(id, { text });
+    if (S.noteDraft.get(id) === text) S.noteDraft.delete(id);
+  }, 600));
+});
+canvasEl.addEventListener("click", e => {
+  const noteEl = e.target.closest("[data-note]"); if (!noteEl) return;
+  const id = noteEl.dataset.note;
+  const sw = e.target.closest("[data-ncolor]");
+  if (sw) { saveNote(id, { color: sw.dataset.ncolor }).then(render); render(); return; }
+  const del = e.target.closest("[data-ndel]");
+  if (del) {
+    const n = S.notes.get(id);
+    const text = S.noteDraft.has(id) ? S.noteDraft.get(id) : (n?.text || "");
+    if (text.trim() && !del.classList.contains("armed")) {
+      del.classList.add("armed"); del.textContent = "Delete?";
+      setTimeout(() => { if (del.isConnected) { del.classList.remove("armed"); del.textContent = "✕"; } }, 3000);
+      return;
+    }
+    S.notes.delete(id); S.noteDraft.delete(id); clearTimeout(noteTimers.get(id)); render();
+    if (S.db) R(P().notes + "/" + id).delete().catch(handleWriteError);
+  }
+});
+canvasEl.addEventListener("pointerdown", e => {
+  if (e.button !== 0) return;
+  const noteEl = e.target.closest("[data-note]");
+  if (noteEl) {
+    const resize = !!e.target.closest("[data-grip]");
+    if (!resize && (!e.target.closest("[data-nbar]") || e.target.closest("button"))) return;
+    e.preventDefault();
+    const z = topZ(); noteEl.style.zIndex = z;
+    drag = { type: "note", id: noteEl.dataset.note, el: noteEl, resize, sx: e.clientX, sy: e.clientY, x: noteEl.offsetLeft, y: noteEl.offsetTop, w: noteEl.offsetWidth, h: noteEl.offsetHeight, moved: false, z };
+    noteEl.setPointerCapture(e.pointerId);
+    return;
+  }
+  const el = e.target.closest("[data-cc]"); if (!el) return;
+  const id = el.dataset.cc;
+  if (!S.canWrite) { drag = { id, el, click: true, sx: e.clientX, sy: e.clientY, readonly: true }; return; }
+  e.preventDefault();
+  const resize = !!e.target.closest("[data-grip]");
+  const z = topZ();
+  el.style.zIndex = z;
+  drag = { type: "card", id, el, resize, sx: e.clientX, sy: e.clientY, x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, moved: false, z };
+  el.setPointerCapture(e.pointerId);
+});
+canvasEl.addEventListener("pointermove", e => {
+  if (!drag || drag.readonly) return;
+  const dx = (e.clientX - drag.sx) / S.zoom, dy = (e.clientY - drag.sy) / S.zoom;
+  if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+  drag.moved = true; drag.el.classList.add("moving");
+  const minW = drag.type === "note" ? 140 : MIN_W, minH = drag.type === "note" ? 90 : MIN_H;
+  const b = drag.type === "card" ? S.boxes?.get(drag.id) : null;
+  if (drag.resize) {
+    drag.nw = Math.min(1200, Math.max(minW, snap(drag.w + dx)));
+    drag.nh = Math.min(1200, Math.max(minH, snap(drag.h + dy)));
+    drag.el.style.width = drag.nw + "px"; drag.el.style.height = drag.nh + "px";
+    if (b) { b.w = drag.nw; b.h = drag.nh; }
+  } else {
+    drag.nx = Math.max(0, snap(drag.x + dx)); drag.ny = Math.max(0, snap(drag.y + dy));
+    drag.el.style.left = drag.nx + "px"; drag.el.style.top = drag.ny + "px";
+    if (b) { b.x = drag.nx; b.y = drag.ny; }
+  }
+  if (b) drawWires();
+});
+function endDrag(e, cancelled) {
+  if (!drag) return;
+  const d = drag; drag = null;
+  d.el.classList.remove("moving");
+  if (!d.moved && !cancelled && d.type !== "note") { openEditor(d.id); }
+  else if (d.moved && !d.readonly) {
+    const f = { x: d.x, y: d.y, w: d.w, h: d.h, z: d.z };
+    if (d.resize) { f.w = d.nw ?? d.w; f.h = d.nh ?? d.h; }
+    else { f.x = d.nx ?? d.x; f.y = d.ny ?? d.y; }
+    if (d.type === "note") saveNote(d.id, f); else savePlacement(d.id, f);
+  } else if (d.type === "note" && d.z) { saveNote(d.id, { z: d.z }); }
+  if (S.pending || d.moved) { S.pending = false; render(); }
+}
+canvasEl.addEventListener("pointerup", e => endDrag(e, false));
+canvasEl.addEventListener("pointercancel", e => endDrag(e, true));
+canvasEl.addEventListener("keydown", e => { if (e.target.matches("[data-ntext]")) return; const el = e.target.closest("[data-cc]"); if (el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEditor(el.dataset.cc); } });
+
+function setZoom(z) { S.zoom = Math.min(1.5, Math.max(0.4, Math.round(z * 10) / 10)); try { localStorage.setItem("sb-zoom", S.zoom); } catch {} render(); }
+$("#z-in").onclick = () => setZoom(S.zoom + 0.1);
+$("#z-out").onclick = () => setZoom(S.zoom - 0.1);
+function setView(v) { S.view = v; try { localStorage.setItem("sb-view", v); } catch {} render(); }
+$("#v-canvas").onclick = () => setView("canvas");
+$("#v-board").onclick = () => setView("board");
+$("#v-archive").onclick = () => setView("archive");
+let tidyArmed = null;
+$("#tidy").onclick = async () => {
+  const b = $("#tidy");
+  if (!tidyArmed) { b.textContent = "Click again to tidy"; tidyArmed = setTimeout(() => { tidyArmed = null; b.textContent = "Tidy up"; }, 3000); return; }
+  clearTimeout(tidyArmed); tidyArmed = null; b.textContent = "Tidy up";
+  const placed = [...S.cards.values()].filter(c => "x" in c || "y" in c || "w" in c || "h" in c);
+  for (const c of placed) {
+    const { x, y, w, h, z, ...rest } = c;
+    S.cards.set(c.id, rest);
+  }
+  render();
+  if (S.db) for (const c of placed) {
+    try { await R(P().cards + "/" + c.id).set(S.cards.get(c.id)); } catch (e) { handleWriteError(e); break; }
+  }
+  toast("Cards laid out by act");
+};
+
+/* ---------- export / import ---------- */
+function snapshotData(source) {
+  return {
+    v: 1, source, campaign: S.meta.name, acts: S.meta.acts,
+    cards: [...S.cards.values()].map(c => ({ ...c, gm: S.canGM ? (S.gm.get(c.id) || "") : "" })),
+  };
+}
+function toB64(str) { const bytes = new TextEncoder().encode(str); let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+function fromB64(b64) { const bin = atob(b64.replace(/[^A-Za-z0-9+/=]/g, "")); return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0))); }
+async function copyText(text, okMsg, fallbackEl) {
+  try { await navigator.clipboard.writeText(text); toast(okMsg); }
+  catch { if (fallbackEl) { fallbackEl.hidden = false; fallbackEl.value = text; fallbackEl.select(); toast("Press Ctrl/Cmd+C to copy"); } }
+}
+function fallbackArea(afterEl) {
+  let ta = afterEl.parentElement.querySelector("textarea.fallback");
+  if (!ta) { ta = document.createElement("textarea"); ta.className = "code fallback"; ta.readOnly = true; ta.hidden = true; afterEl.after(ta); }
+  return ta;
+}
+$("#btn-roll20").onclick = () => {
+  const code = toB64(JSON.stringify(snapshotData("storyboard")));
+  $("#code-size").textContent = `${S.cards.size} cards, ${Math.ceil(code.length / 1024)} KB of code.` + (S.canGM ? " GM notes included." : "");
+  $("#r20-msg").textContent = ""; $("#r20-in").value = "";
+  openSheet("#roll20");
+};
+$("#copy-script").onclick = e => copyText(ROLL20_SCRIPT, "Script copied", fallbackArea(e.target.parentElement));
+$("#copy-code").onclick = e => copyText(toB64(JSON.stringify(snapshotData("storyboard"))), "Roll20 code copied", fallbackArea(e.target.parentElement));
+$("#dl-script").onclick = () => download("storyboard-bridge.js", ROLL20_SCRIPT);
+$("#btn-backup").onclick = () => { $("#file-msg").textContent = ""; openSheet("#backup"); };
+function imageToDataUrl(id) {
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const scale = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(im.naturalWidth * scale); cv.height = Math.round(im.naturalHeight * scale);
+        cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+        res(cv.toDataURL("image/jpeg", 0.85));
+      } catch { res(null); }
+    };
+    im.onerror = () => res(null);
+    im.src = blobUrl(id);
+  });
+}
+async function backupData() {
+  const data = snapshotData("backup");
+  flushAll();
+  data.modules = modulesForBackup();
+  data.notes = S.canGM ? [...S.notes.values()].map(n => ({ ...n, text: S.noteDraft.has(n.id) ? S.noteDraft.get(n.id) : n.text })) : [];
+  let missing = 0;
+  for (const c of data.cards) {
+    if (c.imageId) { const url = await imageToDataUrl(c.imageId); if (url) c.image = url; else missing++; }
+  }
+  return { data, missing };
+}
+$("#dl-json").onclick = async () => {
+  const b = $("#dl-json"); b.disabled = true; const label = b.textContent; b.textContent = "Preparing…";
+  try {
+    const { data, missing } = await backupData();
+    await download(`${(S.meta.name || "campaign").replace(/[^\w-]+/g, "-").toLowerCase()}-storyboard.json`, JSON.stringify(data, null, 2));
+    if (missing) toast(`${missing} picture${missing === 1 ? "" : "s"} couldn't be added to the backup.`);
+  } finally { b.disabled = false; b.textContent = label; }
+};
+$("#copy-md").onclick = e => copyText(toMarkdown(), "Notes copied", fallbackArea(e.target.parentElement));
+async function rt(name) {
+  /* claude.ai's runtime first; the page's own browser storage when that isn't available (or in the downloaded copy) */
+  if (!window.__sbForceLocal && window.claude?.use) { try { const v = await window.claude.use(name); if (v) return v; } catch {} }
+  if ((window.__sbForceLocal || S.local) && window.__sbLocal) return window.__sbLocal.use(name);
+  return null;
+}
+async function download(filename, data) {
+  const dl = (await rt("downloads")) || (window.__sbLocal ? await window.__sbLocal.use("downloads") : null);
+  if (!dl) { toast("Downloads aren't available here. Use the copy button instead."); return; }
+  try { await dl.save({ filename, data }); } catch (e) { if (e?.code !== "cancelled") toast("The download didn't start."); }
+}
+function toMarkdown() {
+  const out = [`# ${S.meta.name}`];
+  for (const col of columns()) {
+    out.push("", `## ${col.name}`);
+    for (const c of col.cards) {
+      out.push("", `### ${c.title} (${KIND[c.kind]?.label || c.kind}${c.status !== "planned" ? ", " + c.status : ""})`);
+      if (c.body) out.push("", c.body);
+      const gm = S.canGM && S.gm.get(c.id); if (gm) out.push("", "> GM: " + gm.replace(/\n/g, "\n> "));
+      if (c.tags?.length) out.push("", c.tags.map(t => "#" + t).join(" "));
+    }
+  }
+  return out.join("\n");
+}
+async function applyData(data, msgEl) {
+  if (!data || !Array.isArray(data.cards)) throw new Error("no cards");
+  if (!S.canWrite) { msgEl.innerHTML = `<span class="err">You can't change this board.</span>`; return; }
+  const knownActs = new Set(S.meta.acts.map(a => a.id));
+  const newActs = (data.acts || []).filter(a => a && a.id && !knownActs.has(a.id));
+  if (newActs.length) { S.meta.acts = [...S.meta.acts, ...newActs]; }
+  if (data.campaign && data.source === "backup" && !S.cards.size) S.meta.name = data.campaign;
+  await saveMeta();
+  let n = 0;
+  for (const raw of data.cards) {
+    if (!raw || !raw.id) continue;
+    const old = S.cards.get(raw.id) || {};
+    const c = {
+      ...old,
+      id: String(raw.id), kind: KIND[raw.kind] ? raw.kind : (old.kind || "lore"), title: raw.title || old.title || "Untitled",
+      body: raw.body ?? old.body ?? "", act: raw.act ?? old.act ?? "", status: ["planned", "played", "cut"].includes(raw.status) ? raw.status : (old.status || "planned"),
+      tags: Array.isArray(raw.tags) ? raw.tags : (old.tags || []), order: typeof raw.order === "number" ? raw.order : (old.order ?? nextOrder(raw.act)),
+      updated: new Date().toISOString(),
+    };
+    if (data.source === "backup") {
+      for (const k of ["x", "y", "w", "h", "z"]) if (typeof raw[k] === "number") c[k] = raw[k];
+      for (const k of CARD_EXTRA) if (typeof raw[k] === "string") c[k] = raw[k];
+      if (typeof raw.color === "string") c.color = raw.color;
+      if (Array.isArray(raw.links)) c.links = raw.links.filter(l => l && typeof l.to === "string").map(l => ({ to: l.to, label: String(l.label || "").slice(0, 40) }));
+      if (typeof raw.image === "string" && raw.image.startsWith("data:image/") && S.assets) {
+        try {
+          const [head, b64] = raw.image.split(",");
+          const bin = atob(b64);
+          const blob = new Blob([Uint8Array.from(bin, ch => ch.charCodeAt(0))], { type: head.slice(5).split(";")[0] });
+          c.imageId = (await S.assets.upload(blob)).id;
+        } catch { /* keep the card without its picture */ }
+      } else if (raw.imageId && !old.imageId && !S.assets) { /* picture can't be carried */ }
+    }
+    await saveCard(c, S.canGM && typeof raw.gm === "string" ? raw.gm : undefined);
+    n++;
+  }
+  let nn = 0;
+  if (data.source === "backup" && Array.isArray(data.notes) && S.canGM && S.db) {
+    for (const raw of data.notes) {
+      if (!raw || !raw.id) continue;
+      const note = { id: String(raw.id), text: String(raw.text || ""), color: raw.color || "yellow",
+        x: Number(raw.x) || 16, y: Number(raw.y) || 16, w: Number(raw.w) || 220, h: Number(raw.h) || 180, z: Number(raw.z) || 1 };
+      S.notes.set(note.id, note);
+      try { await R(P().notes + "/" + note.id).set(note); nn++; } catch (e) { handleWriteError(e); break; }
+    }
+  }
+  const nm = data.source === "backup" ? await restoreModules(data.modules).catch(e => { handleWriteError(e); return 0; }) : 0;
+  render();
+  msgEl.innerHTML = `<span class="ok">Updated ${n} card${n === 1 ? "" : "s"}${nn ? ` and ${nn} note${nn === 1 ? "" : "s"}` : ""}${nm ? `, plus ${nm} session, plot, combat and screen entr${nm === 1 ? "y" : "ies"}` : ""}.</span>`;
+}
+$("#r20-apply").onclick = async () => {
+  const msg = $("#r20-msg");
+  try { await applyData(JSON.parse(fromB64($("#r20-in").value.replace(/<[^>]*>/g, ""))), msg); }
+  catch { msg.innerHTML = `<span class="err">That code couldn't be read. Copy everything in the Storyboard Export GM Notes and try again.</span>`; }
+};
+
+
+/* ---------- campaign switcher events ---------- */
+$("#board-pick").addEventListener("change", e => switchBoard(e.target.value));
+let bdMode = null;
+function bdReset() { bdMode = null; $("#bd-name-wrap").hidden = true; $("#bd-go-wrap").hidden = true; $("#bd-name").value = ""; }
+$("#btn-boards").onclick = () => { bdReset(); renderBoards(); $("#bd-main-hint").hidden = S.board !== "main"; openSheet("#boards"); };
+$("#board-list").addEventListener("click", e => { const b = e.target.closest("[data-open-board]"); if (b) switchBoard(b.dataset.openBoard); });
+function bdAsk(mode) {
+  bdMode = mode;
+  $("#bd-name-wrap").hidden = false; $("#bd-go-wrap").hidden = false;
+  $("#bd-name").value = mode === "copy" ? `${S.meta.name} (copy)` : "";
+  $("#bd-go").textContent = mode === "copy" ? "Save copy" : "Create campaign";
+  $("#bd-name").focus(); $("#bd-name").select();
+}
+$("#bd-new").onclick = () => bdAsk("new");
+$("#bd-dup").onclick = () => bdAsk("copy");
+$("#bd-cancel").onclick = bdReset;
+async function bdGo() {
+  if (!bdMode) return;
+  const name = $("#bd-name").value.trim() || (bdMode === "copy" ? `${S.meta.name} (copy)` : "New campaign");
+  const copy = bdMode === "copy";
+  $("#bd-go").disabled = true;
+  try { await createBoard(name, copy); } catch (e) { handleWriteError(e); }
+  finally { $("#bd-go").disabled = false; bdReset(); }
+}
+$("#bd-go").onclick = bdGo;
+$("#bd-name").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); bdGo(); } });
+$("#bd-delete").onclick = () => { $("#bd-confirm").hidden = false; $("#bd-delete").hidden = true; };
+$("#bd-delete-no").onclick = () => { $("#bd-confirm").hidden = true; $("#bd-delete").hidden = false; };
+$("#bd-delete-yes").onclick = () => deleteBoard();
+document.addEventListener("keydown", async e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    if (!S.db) { toast("Saving isn't available here. Use Backup to keep a copy."); return; }
+    await flushNotes();
+    const wait = () => S.saving ? new Promise(r => setTimeout(() => r(wait()), 120)) : Promise.resolve();
+    await wait();
+    toast("Saved");
+  }
+});
+
+/*__MODULES_JS__*/
+
+/* ---------- boot ---------- */
+
+render();
+(async () => {
+  let [db, user, assets] = await Promise.all([rt("db"), rt("user"), rt("assets")]);
+  if (!db && window.__sbLocal) {
+    // claude.ai storage isn't available in this view: save in this browser instead
+    S.local = true;
+    [db, user, assets] = await Promise.all([window.__sbLocal.use("db"), window.__sbLocal.use("user"), window.__sbLocal.use("assets")]);
+    if (!window.__sbForceLocal) showNotice("claude.ai can't save in this view, so this page is saving in this browser only. Open the storyboard while signed in to claude.ai to see your online campaigns, or use Backup to move campaigns between copies.");
+  }
+  S.assets = assets;
+  if (window.__STANDALONE || S.local) {
+    $("#backup-hint").textContent = window.__NO_PERSIST
+      ? "This browser isn't letting the storyboard save, so changes last until you close it. Download a backup before closing."
+      : "This copy saves in this browser on this computer. Download a backup to move a campaign to another computer, or to send it to someone. Backups include pictures, links and sticky notes.";
+  }
+  if (user) {
+    const [canEdit, owner, w] = await Promise.all([user.canEdit(), user.isOwner(), user.can("data.write")]);
+    S.canGM = !!(canEdit || owner);
+    if (w === false) S.canWrite = false;
+  }
+  if (!db) {
+    S.loaded = true;
+    showNotice("Saving isn't available in this view, so changes last until you close the page. Use Backup to keep a copy.");
+    render(); renderBoards(); return;
+  }
+  S.db = db;
+  // The campaign list: the original board plus any others.
+  db.doc("meta/campaign").onSnapshot(snap => {
+    S.mainName = snap.exists ? (snap.data().name || "My Campaign") : "My Campaign"; renderBoards();
+  }, () => {});
+  db.collection("boards").onSnapshot(snap => {
+    S.boardList = snap.docs.map(d => ({ id: d.id, name: d.data().name || "Untitled campaign", created: d.data().created || "" }))
+      .sort((a, b) => String(a.created).localeCompare(String(b.created)));
+    if (S.board !== "main" && snap.metadata && !snap.metadata.fromCache && !S.boardList.some(b => b.id === S.board)) switchBoard("main");
+    renderBoards();
+  }, () => {});
+  attachBoard(S.board);
+})();
+</script>

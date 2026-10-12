@@ -1,0 +1,41 @@
+# Campaign Storyboard
+
+A campaign planner for D&D 5e (2024 rules) in a single web page. Open it in any browser, online or offline. No account, no server.
+
+**Use it:** https://dalleywater1.github.io/D-D-Storyboard-and-DM-Screen/
+(or download `index.html` and double-click it)
+
+## What's in it
+
+- **Storyboard**: acts, scene/NPC/place/town/item/lore cards on a free-form table you can drag and resize, pictures, colours, sticky notes. Link cards with + Link or by dragging a card's link dot, and use Show links to see only what a card connects to. Archive cards you're done with and bring them back any time.
+- **Sessions**: strong start, the cards you plan to use, secrets & clues, prep notes, recap.
+- **Meta Plot**: premise, the big secret, and storyline threads with stages and progress.
+- **NPCs** and **Towns**: role, town, attitude, voice, secrets; who lives where. NPCs get a portrait and an editable stat block (start from any Bestiary creature), and can be added to an encounter or dropped on the DM Screen.
+- **Combats**: encounter builder with the 2024 XP budgets, and an initiative tracker with HP and conditions.
+- **Bestiary**: 341 creatures with full stat blocks. Add them to an encounter or drop them on the DM Screen.
+- **Reference**: spells, magic items, conditions, equipment, feats, weapon mastery and more.
+- **DM Screen**: rules panels plus your own (Encounter, Monster, Day counter for expiring potions, Dice roller, Notes). Drag panels anywhere, resize them, colour them.
+- **Several campaigns**, each with its own everything. Switch from the menu at the top.
+- **Roll20 bridge**: a Mod script (`roll20/storyboard-bridge.js`, needs Roll20 Pro) that turns cards into handouts and characters. NPC stat blocks go into the character's Bio. Scripts can't upload pictures, so download a portrait from the NPC page and drag it onto the character's avatar.
+
+## Where your data lives
+
+Everything you make is saved in **your browser** on the computer you use it on. Nothing is uploaded anywhere.
+
+- To move or share a campaign: **Backup → Download this campaign**, then **Load a file** in the other copy. You choose whether it's added as a new campaign or updates one with the same name.
+- To move everything at once: **Backup → Download everything**.
+- Clearing your browser's site data deletes what's saved, so download a backup now and then.
+
+## Building from source
+
+`index.html` is built from the files in `src/`:
+
+```
+python3 src/build.py
+```
+
+## Credits
+
+This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+SRD data was converted from the [5e-bits/5e-database](https://github.com/5e-bits/5e-database) project (MIT licence).
