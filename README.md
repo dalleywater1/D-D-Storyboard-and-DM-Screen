@@ -59,6 +59,21 @@ Roll20 bridge, backup format, encounter tools or DM Screen.
 
 ## Building from source
 
+The October 12 network update adds the Three Lights, seven proposed civilian
+Voice identities, both Shadows, and the Concordance cipher as Meta Plot threads.
+Alessa is now the Second Light; her old homebrew ability names are retained.
+Darius Horn is distinct from General Darius Kelm. New Voice covers are explicitly
+labelled custom, pending canon approval. Morgan uses the bundled Adult Green
+Dragon block unchanged; its missing recharge and legendary-use limits are
+flagged in his GM notes, alongside the custom humanoid-guise lore. This is not
+claimed to be a verified complete 2024 stat block. The migration preserves prior
+notes, IDs, images, links and existing stat blocks and runs once per campaign.
+
+Validation: all three content migration suites and built-script syntax checks
+pass. A local Edge browser smoke test opens the seeded Fallen Lands campaign
+with all 22 NPC cards and three Meta Plot threads, with no page errors.
+Live Roll20 integration was not exercised; its code is unchanged.
+
 `index.html` is built from the files in `src/`:
 
 ```

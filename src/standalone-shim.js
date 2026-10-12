@@ -58,6 +58,7 @@
         const update = fallenLandsUpdate(store);
         const pending = new Map([...store, ...update.writes]);
         update.writes.push(...fallenLandsNpcUpdate(pending));
+        update.writes.push(...fallenLandsNetworkUpdate(new Map([...store, ...update.writes])));
         if (update.writes.length) {
           await write("docs", s => { for (const [k, v] of update.writes) s.put(v, k); });
           for (const [k, v] of update.writes) store.set(k, v);
