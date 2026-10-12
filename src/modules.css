@@ -397,3 +397,13 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
 .pick-bar .hint { flex: 1 1 200px; }
 .group-pop { display: grid; gap: 10px; max-width: 420px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
 .group-pop .actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Homebrew creatures */
+.hb-tag { display: inline-block; font: 600 10px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--k-npc); border: 1px solid currentColor; border-radius: 4px; padding: 1px 5px; }
+.hb-copy { display: flex; justify-content: flex-end; }
+.hb-role { border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; }
+.hb-role h3 { margin: 0 0 4px; font: 600 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.hb-role p { margin: 4px 0; }
+.hb-lore { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
+.hb-lore summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.hb-lore p { margin: 6px 0; }

@@ -12,7 +12,7 @@ A campaign planner for D&D 5e (2024 rules) in a single web page. Open it in any 
 - **Meta Plot**: premise, the big secret, and storyline threads with stages and progress.
 - **NPCs** and **Towns**: role, town, attitude, voice, secrets; who lives where. NPCs get a portrait, an editable stat block (start from any Bestiary creature) and weapons with attacks worked out for you and Attack/Damage roll buttons, and can be added to an encounter or dropped on the DM Screen.
 - **Combats**: encounter builder with the 2024 XP budgets, and an initiative tracker with HP and conditions.
-- **Bestiary**: 341 creatures with full stat blocks. Add them to an encounter or drop them on the DM Screen.
+- **Bestiary**: 341 SRD creatures with full stat blocks, plus your own **homebrew** creatures (start blank or from a copy of any SRD creature). Add them to an encounter or drop them on the DM Screen.
 - **Reference**: spells, magic items, conditions, equipment, feats, weapon mastery and more.
 - **DM Screen**: rules panels plus your own (Encounter, Monster, Day counter for expiring potions, Dice roller, Notes). Drag panels anywhere, resize them, colour them.
 - **Several campaigns**, each with its own everything. Switch from the menu at the top.
@@ -56,6 +56,10 @@ workflow to carry that material forward.
 The content update is saved atomically before the board opens; failed writes
 leave existing data intact and retry next opening. No changes were made to the
 Roll20 bridge, backup format, encounter tools or DM Screen.
+
+## Hushed (Fallen Lands)
+
+The Fallen Lands Bestiary gains six homebrew **Hushed**: Drone (CR 1/2), Staccato (CR 1), Presto (CR 1), Bass (CR 2), Crescendo (CR 3) and Conductor (CR 4), each with the shared traits The Night Measure, Empty Mind, Mission Focus and No Self-Preservation, their combat role and the shared Hushed lore. Combats gains the planned **Stormhollow Tavern Composition** (1 Conductor, 1 Crescendo, 2 Bass, 2 Staccato) with the mission notes. Runs once per campaign; later edits and deletions are kept, and an older homebrew creature with the same name is replaced in place.
 
 ## Building from source
 

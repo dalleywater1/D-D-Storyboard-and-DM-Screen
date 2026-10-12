@@ -10,11 +10,11 @@ H = os.path.dirname(os.path.abspath(__file__)) + '/'
 ROOT = os.path.dirname(H.rstrip('/')) + '/'
 s = open(H + 'storyboard.src.html').read()
 bridge = open(ROOT + 'roll20/storyboard-bridge.js').read()
-mods = '\n'.join(open(H + f).read() for f in ['srd/srd-data.js', 'spells-data.js', 'modules.js', 'screen.js', 'grid.js', 'everything.js', 'bestiary.js', 'links.js', 'archive.js', 'npc.js', 'groups.js'])
+mods = '\n'.join(open(H + f).read() for f in ['srd/srd-data.js', 'spells-data.js', 'modules.js', 'screen.js', 'grid.js', 'everything.js', 'bestiary.js', 'links.js', 'archive.js', 'npc.js', 'groups.js', 'creatures.js'])
 s = s.replace('/*__MODULES_CSS__*/', open(H + 'modules.css').read()).replace('/*__MODULES_JS__*/', mods)
 assert '__MODULES' not in s
 body = s.replace('__SCRIPT__', json.dumps(bridge).replace('</', '<\\/'))
-shim = '\n'.join(open(H + f).read() for f in ['fallen-lands.js', 'fallen-lands-npcs.js', 'fallen-lands-network.js', 'stormhollow.js', 'standalone-shim.js'])
+shim = '\n'.join(open(H + f).read() for f in ['fallen-lands.js', 'fallen-lands-npcs.js', 'fallen-lands-network.js', 'stormhollow.js', 'hushed.js', 'standalone-shim.js'])
 assert body.count('<script>\nconst ROLL20_SCRIPT') == 1
 app = body.replace('<script>\nconst ROLL20_SCRIPT', '<script>\nwindow.__sbForceLocal = true; window.__STANDALONE = true;\n' + shim + '\n</script>\n<script>\nconst ROLL20_SCRIPT')
 head = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
