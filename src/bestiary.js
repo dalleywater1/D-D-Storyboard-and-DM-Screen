@@ -1,5 +1,5 @@
 /* ===================== Bestiary & Reference (SRD 5.2) ===================== */
-const SRD_CREDIT = `This work includes material from the System Reference Document 5.2 (“SRD 5.2”) by Wizards of the Coast LLC, available at <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>. The SRD 5.2 is licensed under the <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0 International License</a>.`;
+const SRD_CREDIT = `Additional Adult Green Dragon statistics include material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>. The SRD 5.2.1 is licensed under the <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0 International License</a>. Formatting has been adapted to this site. This work includes material from the System Reference Document 5.2 (“SRD 5.2”) by Wizards of the Coast LLC, available at <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>. The SRD 5.2 is licensed under the <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0 International License</a>.`;
 const MON = new Map(SRD.monsters.map(m => [m.i, m]));
 const MON_BY_NAME = new Map(SRD.monsters.map(m => [m.n.toLowerCase(), m]));
 const crNum = cr => cr === "1/8" ? 0.125 : cr === "1/4" ? 0.25 : cr === "1/2" ? 0.5 : Number(cr) || 0;
@@ -36,7 +36,7 @@ function statBlock(m) {
   const saves = {}; (m.sv || "").split(", ").filter(Boolean).forEach(s => { const [a, v] = s.split(" "); saves[a.slice(0, 3).toUpperCase()] = v; });
   return `<div class="statblock">
     <div class="sb-head"><h2>${esc(m.n)}</h2><div class="sb-type">${esc(m.sz)} ${esc(m.t)}${m.al ? ", " + esc(m.al) : ""}</div></div>
-    <div class="sb-core">${line("AC", m.ac)}${line("HP", m.hp + (m.hd ? ` (${m.hd})` : ""))}${line("Speed", m.sp)}<div><b>Initiative</b> ${abMod(m.ab[1])}</div></div>
+    <div class="sb-core">${line("AC", m.ac)}${line("HP", m.hp + (m.hd ? ` (${m.hd})` : ""))}${line("Speed", m.sp)}<div><b>Initiative</b> ${m.init == null ? abMod(m.ab[1]) : esc(m.init)}</div></div>
     <div class="sb-abil">${ABILS.map((a, k) => `<div><span>${a}</span><b>${m.ab[k]}</b><em>${abMod(m.ab[k])}${saves[a] && saves[a] !== abMod(m.ab[k]).replace("−", "-") ? ` · save ${saves[a]}` : ""}</em></div>`).join("")}</div>
     <div class="sb-props">${line("Skills", m.sk)}${line("Vulnerabilities", m.vu)}${line("Resistances", m.re)}${line("Immunities", [m.im, m.ci].filter(Boolean).join("; "))}${line("Gear", m.g)}${line("Senses", m.se)}${line("Languages", m.la || "—")}
       <div><b>CR</b> ${esc(m.cr)} (XP ${fmtN(m.xp)}; PB +${m.pb})</div></div>

@@ -61,17 +61,29 @@ Roll20 bridge, backup format, encounter tools or DM Screen.
 
 The October 12 network update adds the Three Lights, seven proposed civilian
 Voice identities, both Shadows, and the Concordance cipher as Meta Plot threads.
-Alessa is now the Second Light; her old homebrew ability names are retained.
+Alessa is now the Second Light; her homebrew mechanics are retained.
 Darius Horn is distinct from General Darius Kelm. New Voice covers are explicitly
-labelled custom, pending canon approval. Morgan uses the bundled Adult Green
-Dragon block unchanged; its missing recharge and legendary-use limits are
-flagged in his GM notes, alongside the custom humanoid-guise lore. This is not
-claimed to be a verified complete 2024 stat block. The migration preserves prior
-notes, IDs, images, links and existing stat blocks and runs once per campaign.
+labelled custom, pending canon approval.
 
-Validation: all three content migration suites and built-script syntax checks
-pass. A local Edge browser smoke test opens the seeded Fallen Lands campaign
-with all 22 NPC cards and three Meta Plot threads, with no page errors.
+The subsequent Stormhollow handover links nine NPCs to a real Stormhollow town
+record: the Three Lights, Bill, Ted, Charlie, Elaya von Forness, Father Thomas
+and Hesta Varn. Full supplied backgrounds, item concepts and the consent theme
+are in GM notes. No family names or unfinished combat statistics were invented.
+Hesta has the supplied working mechanics; Darius, Elaya and Thomas retain
+unfinished combat concepts. Alessa's ability labels now say Light instead of
+Voice, without changing their effects. Morgan's full Adult Green Dragon block
+is checked against SRD 5.2.1 p.294, including recharge, initiative and legendary
+uses, and is collapsed behind a GM reveal control by default. Humanoid-guise
+mechanics remain unspecified. Earlier replaced blocks are retained in the GM
+document's priorStatBlocks array and as GM-note text for the existing backup format.
+This update runs once per campaign and preserves IDs, pictures, links and prior
+notes, including later edits/deletions after the update has run.
+
+Validation: all four content migration suites and built-script syntax checks
+pass. Local Edge checks confirm nine town residents, working town filtering,
+Morgan's collapsed/revealed block, Hesta's mechanics, unfinished Thomas, and
+persistence after reload, with no page errors. Fresh campaigns have 28 NPCs,
+one town and three Meta Plot threads.
 Live Roll20 integration was not exercised; its code is unchanged.
 
 `index.html` is built from the files in `src/`:
@@ -85,3 +97,9 @@ python3 src/build.py
 This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
 
 SRD data was converted from the [5e-bits/5e-database](https://github.com/5e-bits/5e-database) project (MIT licence).
+
+Morgan's corrected statistics include material from the System Reference
+Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at
+https://www.dndbeyond.com/srd, licensed under the Creative Commons Attribution
+4.0 International License, https://creativecommons.org/licenses/by/4.0/legalcode.
+The block's formatting is adapted to this site's NPC fields.

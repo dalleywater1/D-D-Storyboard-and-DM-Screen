@@ -15,7 +15,7 @@ var sbToMon = function (c) {
   const sb = c.sb || {}, ab = ABILS.map((a, k) => int(sb.ab?.[k] ?? 10) || 10);
   return { n: c.title || "NPC", sz: sb.size || "Medium", t: sb.type || "humanoid", al: sb.al || "", ac: sb.ac || "—", hp: sb.hp || "—", hd: sb.hd || "",
     sp: sb.sp || "30 ft.", ab, sv: sb.sv || "", sk: sb.sk || "", vu: sb.vu || "", re: sb.re || "", im: sb.im || "", ci: sb.ci || "", se: sb.se || "", la: sb.la || "", g: sb.g || "",
-    cr: sb.cr || "0", xp: CR_XP[sb.cr || "0"] ?? 0, pb: pbFor(sb.cr || "0"),
+    cr: sb.cr || "0", xp: CR_XP[sb.cr || "0"] ?? 0, pb: pbFor(sb.cr || "0"), init: sb.init,
     ...Object.fromEntries(SB_SECTIONS.map(([k]) => [k, linesToEntries(sb[k])])) };
 }
 function monToSb(m) {
@@ -48,6 +48,13 @@ document.addEventListener("change", async e => {
 
 /* ----- stat block section on the NPC page ----- */
 function npcStatSection(c) {
+  if (c.concealedStatBlock) {
+    if (!S.canGM) return "";
+    return `<details class="msec gm-box" ${S.sbEdit[c.id] ? "open" : ""}><summary>GM only — reveal hidden stat block</summary>${npcStatSectionContent(c)}</details>`;
+  }
+  return npcStatSectionContent(c);
+}
+function npcStatSectionContent(c) {
   const i = c.id, m = "cards";
   if (!c.sb) {
     return `<div class="msec"><h3>Stat block</h3>
