@@ -309,7 +309,7 @@ textarea.code { font: 12px/1.4 var(--f-mono); width: 100%; min-height: 80px; bor
 .glance button .progress { grid-column: 1 / -1; }
 
 /* ---------- combats ---------- */
-.mtable-wrap { overflow-x: auto; }
+.mtable-wrap { overflow-x: auto; position: relative; }
 table.mt { border-collapse: collapse; width: 100%; }
 .mt th { text-align: left; font: 500 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 4px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .mt td { padding: 3px 4px; border-bottom: 1px solid var(--line); }
@@ -644,6 +644,20 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
 .hb-lore { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
 .hb-lore summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
 .hb-lore p { margin: 6px 0; }
+
+/* Encounter dice and stat blocks */
+.enc-dice .dice-ctl { display: grid; grid-template-columns: repeat(3, minmax(0, 160px)); gap: 10px; }
+.enc-last { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.enc-last .dice-result { font: 30px/1 var(--f-display); color: var(--accent); }
+.sb-tog { font-size: 12px; }
+.enc-sb { margin: 6px 0 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); min-width: 0; overflow-wrap: anywhere; }
+.mt tr.sb-row td { border-bottom: 1px solid var(--line); padding: 0 4px 6px; }
+.init-sb { margin: -2px 0 8px 0; }
+.tracker .enc-sb { margin-left: 8px; }
+button.rl { font: inherit; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 5px; padding: 0 5px; cursor: pointer; line-height: 1.5; }
+button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+@media (max-width: 520px) { .enc-dice .dice-ctl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 </style>
 
@@ -3119,8 +3133,8 @@ function combatDetail(c) {
           <td class="num" style="width:64px">${fInput(m, i, `monsters.${n}.ac`, null, { type: "number", aria: `Monster ${n + 1} AC` })}</td>
           <td class="num" style="width:72px">${fInput(m, i, `monsters.${n}.hp`, null, { type: "number", aria: `Monster ${n + 1} HP` })}</td>
           <td class="num mono" style="width:80px">${fmtN((CR_XP[mo.cr] ?? 0) * Math.max(0, int(mo.count)))}</td>
-          <td style="width:76px"><span class="actions" style="flex-wrap:nowrap;gap:4px">${mo.srd ? `<button type="button" class="icon-btn" data-do="goto" data-tab="bestiary" data-id="${esc(mo.srd)}" aria-label="Stat block for ${esc(mo.name)}" title="Stat block">i</button>` : mo.npc ? `<button type="button" class="icon-btn" data-do="goto" data-tab="npcs" data-id="${esc(mo.npc)}" aria-label="NPC page for ${esc(mo.name)}" title="NPC stat block">i</button>` : ""}${S.canWrite ? `<button type="button" class="icon-btn" data-do="mon-del" data-id="${esc(i)}" data-n="${n}" aria-label="Remove monster">×</button>` : ""}</span></td>
-        </tr>`).join("")}</tbody></table></div>` : `<p class="hint">No monsters yet.</p>`}
+          <td style="width:110px"><span class="actions" style="flex-wrap:nowrap;gap:4px">${typeof sbToggle === "function" ? sbToggle(c, mo, "mon:" + n) : ""}${mo.srd ? `<button type="button" class="icon-btn" data-do="goto" data-tab="bestiary" data-id="${esc(mo.srd)}" aria-label="Stat block for ${esc(mo.name)}" title="Stat block">i</button>` : mo.npc ? `<button type="button" class="icon-btn" data-do="goto" data-tab="npcs" data-id="${esc(mo.npc)}" aria-label="NPC page for ${esc(mo.name)}" title="NPC stat block">i</button>` : ""}${S.canWrite ? `<button type="button" class="icon-btn" data-do="mon-del" data-id="${esc(i)}" data-n="${n}" aria-label="Remove monster">×</button>` : ""}</span></td>
+        </tr>${typeof sbOpenBlock === "function" ? sbOpenBlock(c, mo, "mon:" + n, "row") : ""}`).join("")}</tbody></table></div>` : `<p class="hint">No monsters yet.</p>`}
       ${S.canWrite ? `<div class="add-row"><input id="best-add-${esc(i)}" list="srd-monster-list" data-change="best-add" data-id="${esc(i)}" placeholder="Add from the Bestiary: type a creature name" aria-label="Add a creature from the Bestiary"><button type="button" class="btn" data-do="mon-add" data-id="${esc(i)}">+ Blank row</button></div>` : ""}
       <div class="diffrow"><div class="diff ${st.tone}">${st.label}</div><div class="mono hint">${fmtN(st.total)} XP${st.size ? ` · High budget ${fmtN(st.b[2])}` : ""}</div></div>
       <div class="meter" role="img" aria-label="${esc(`${st.label}: ${st.total} XP against budgets of ${st.b.join(", ")}`)}">
@@ -3129,6 +3143,7 @@ function combatDetail(c) {
       </div>
     </div>
     <div class="mgrid">${fArea(m, i, "tactics", "Tactics", { rows: 3, ph: "How the monsters fight, and when they flee" })}${fArea(m, i, "loot", "Loot & rewards", { rows: 3 })}</div>
+    ${typeof encDice === "function" ? encDice(c) : ""}
     ${tracker(c)}
     <div class="md-foot"><span class="spacer"></span>${delBtn("combat", i, "Delete encounter", "del-combat")}</div>
   </section>`;
@@ -3159,12 +3174,12 @@ function tracker(c) {
       const active = x.id === run.active, down = x.hp !== "" && x.hp != null && Number(x.hp) <= 0;
       return `<div class="init-row ${active ? "active" : ""} ${down ? "down" : ""}" id="row-${esc(x.id)}">
         ${fInput(m, i, `run.list.${x.n}.init`, null, { type: "number", aria: `Initiative for ${x.name}`, ph: "Init" })}
-        <div class="nm">${active ? `<span class="turn-tag">Turn</span>` : ""}<b>${esc(x.name)}</b>${x.pc ? pill("PC", "muted") : ""}<span class="hint">AC ${esc(x.ac || "—")}</span></div>
+        <div class="nm">${active ? `<span class="turn-tag">Turn</span>` : ""}${typeof sbToggle === "function" ? sbToggle(c, x, "run:" + x.id) : ""}<b>${esc(x.name)}</b>${x.pc ? pill("PC", "muted") : ""}<span class="hint">AC ${esc(x.ac || "—")}</span></div>
         <div class="hp">${fInput(m, i, `run.list.${x.n}.hp`, null, { type: "number", aria: `Hit points for ${x.name}`, ph: "HP" })}<span class="hint">/ ${esc(x.max || "—")}</span></div>
         <div class="conds">${(x.cond || []).map((cd, k) => `<span class="cchip">${esc(cd)}<button type="button" data-do="cond-del" data-id="${esc(i)}" data-n="${x.n}" data-k="${k}" aria-label="Remove ${esc(cd)} from ${esc(x.name)}">×</button></span>`).join("")}
           ${S.canWrite ? `<select data-change="cond-add" data-id="${esc(i)}" data-n="${x.n}" aria-label="Add a condition to ${esc(x.name)}"><option value="">+ Condition</option>${CONDITIONS.filter(cd => !(x.cond || []).includes(cd)).map(cd => `<option>${cd}</option>`).join("")}</select>` : ""}</div>
         ${S.canWrite ? `<button type="button" class="icon-btn" data-do="run-del" data-id="${esc(i)}" data-n="${x.n}" aria-label="Remove ${esc(x.name)}">×</button>` : ""}
-      </div>`;
+      </div>${typeof sbOpenBlock === "function" ? sbOpenBlock(c, x, "run:" + x.id, "init-sb") : ""}`;
     }).join("")}</div>
     ${S.canWrite ? `<div class="add-row"><input id="run-name" placeholder="Add someone: name" aria-label="Combatant name"><input id="run-init" class="short" type="number" placeholder="Init" aria-label="Initiative"><input id="run-hp" class="short" type="number" placeholder="HP" aria-label="Hit points"><button type="button" class="btn" data-do="run-add" data-id="${esc(i)}">Add</button></div>
     <div class="actions">${S.confirm === "end" + i ? `<span class="confirm">End this combat? <button type="button" class="btn danger" data-do="run-end" data-id="${esc(i)}">End combat</button><button type="button" class="btn" data-do="cancel">Keep going</button></span>` : `<button type="button" class="btn" data-do="ask" data-key="end${esc(i)}">End combat</button>`}</div>` : ""}
@@ -3250,7 +3265,7 @@ const ACTIONS = {
     const list = guildParty().map(p => ({ id: uid(), name: p.char || p.player, pc: true, init: "", hp: p.hp === "" || p.hp == null ? "" : Number(p.hp), max: p.hp || "", ac: p.ac || "", cond: [] }));
     for (const mo of c.monsters || []) {
       const n = Math.max(0, int(mo.count));
-      for (let k = 0; k < n; k++) list.push({ id: uid(), name: (mo.name || "Monster") + (n > 1 ? " " + (k + 1) : ""), pc: false, init: "", hp: mo.hp === "" || mo.hp == null ? "" : Number(mo.hp), max: mo.hp || "", ac: mo.ac || "", cond: [] });
+      for (let k = 0; k < n; k++) list.push({ id: uid(), name: (mo.name || "Monster") + (n > 1 ? " " + (k + 1) : ""), pc: false, init: "", hp: mo.hp === "" || mo.hp == null ? "" : Number(mo.hp), max: mo.hp || "", ac: mo.ac || "", cond: [], ...(mo.srd ? { srd: mo.srd } : mo.npc ? { npc: mo.npc } : {}) });
     }
     if (!list.length) { toast("Add a monster or fill in the party first"); return; }
     c.run = { round: 1, active: sortedRun(list)[0].id, list };
@@ -5263,6 +5278,101 @@ Object.assign(ACTIONS, {
   "hb-copy": d => { const m = MON.get(d.id); if (!m) return; newCreature({ title: m.n + " (homebrew)", sb: monToSb(m) }); toast(`Copied ${m.n}. Change anything you like.`); },
 });
 CHANGES["best-src"] = (d, el) => { S.best.src = el.value; renderModule(); };
+
+/* ===================== Encounter dice and stat blocks =====================
+   On an encounter: a dice roller, and a ▸ on every monster (in the list and in
+   the initiative tracker) that opens its stat block in place. Attack bonuses,
+   damage dice and saving throws in those stat blocks are buttons that roll
+   into the encounter's dice log (using its Advantage/Disadvantage setting). */
+S.encSb = new Set(); S.encDice = {}; S.encDiceCfg = {};
+const ENC_DICE = [4, 6, 8, 10, 12, 20, 100];
+
+/* which stat block a monster row or tracker entry belongs to */
+function monFor(c, x) {
+  if (!x || x.pc) return null;
+  let ref = x.srd ? { srd: x.srd } : x.npc ? { npc: x.npc } : null;
+  if (!ref && c) {
+    // combats started before rows remembered their creature: match "Goblin 2" to the "Goblin" row
+    const nm = String(x.name || "");
+    const mo = (c.monsters || []).find(m => m.name && (m.srd || m.npc) && (nm === m.name || nm.startsWith(m.name + " ")));
+    if (mo) ref = mo.srd ? { srd: mo.srd } : { npc: mo.npc };
+  }
+  if (!ref) return null;
+  if (ref.srd) return MON.get(ref.srd) || null;
+  const card = S.cards.get(ref.npc);
+  return card && card.sb ? sbToMon(card) : null;
+}
+function sbToggle(c, x, key) {
+  const m = monFor(c, x); if (!m) return "";
+  const open = S.encSb.has(c.id + "|" + key);
+  return `<button type="button" class="icon-btn sb-tog" data-do="enc-sb" data-id="${esc(c.id)}" data-k="${esc(key)}" aria-expanded="${open}"
+    aria-label="${open ? "Hide" : "Show"} stat block for ${esc(x.name || m.n)}" title="${open ? "Hide" : "Show"} stat block">${open ? "▾" : "▸"}</button>`;
+}
+function sbOpenBlock(c, x, key, kind) {
+  if (!S.encSb.has(c.id + "|" + key)) return "";
+  const m = monFor(c, x); if (!m) return "";
+  const html = `<div class="enc-sb">${rollable(statBlock(m), c.id, x.name || m.n)}</div>`;
+  return kind === "row" ? `<tr class="sb-row"><td colspan="7">${html}</td></tr>` : html;
+}
+/* turn "+5" after Attack Roll, "(1d6 + 3)" and "save +4" into roll buttons */
+function rollable(html, encId, who) {
+  const btn = (expr, label, what) => `<button type="button" class="rl" data-do="enc-roll" data-id="${esc(encId)}" data-expr="${expr}" data-who="${esc(who)}" data-what="${what}" title="Roll ${what}">${label}</button>`;
+  const num = s => String(s).replace("−", "-").replace(/\s+/g, "");
+  // damage dice only in the traits/actions sections, so "HP 10 (3d6)" stays plain
+  const k = html.indexOf('class="sb-sec"'), head = k < 0 ? html : html.slice(0, k), body = k < 0 ? "" : html.slice(k);
+  return (head.replace(/save ([+−-]\d+)/g, (_, b) => "save " + btn("d20" + num(b), b, "save")) + body
+    .replace(/(Attack Roll:(?:<\/i>)?\s*)([+−-]\d+)/g, (_, a, b) => a + btn("d20" + num(b), b, "attack"))
+    .replace(/(\d+) \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\)/g, (_, avg, e) => `${avg} (${btn(num(e), e, "damage")})`));
+}
+function rollExprFull(expr, mode) {
+  const m = String(expr).match(/^(\d*)d(\d+)([+-]\d+)?$/); if (!m) return null;
+  const n = Math.min(50, int(m[1]) || 1), die = int(m[2]), mod = int(m[3] || 0), r = () => 1 + Math.floor(Math.random() * die);
+  if (die === 20 && n === 1 && (mode === "adv" || mode === "dis")) {
+    const a = r(), b = r(), keep = mode === "adv" ? Math.max(a, b) : Math.min(a, b);
+    return { total: keep + mod, nat: keep, text: `d20 ${mode} (${a}, ${b}) → ${keep}${mod ? (mod > 0 ? " + " : " − ") + Math.abs(mod) : ""}` };
+  }
+  const rolls = Array.from({ length: n }, r), sum = rolls.reduce((s, x) => s + x, 0);
+  return { total: sum + mod, nat: n === 1 ? rolls[0] : null, rolls, n, die, mod, text: `${n === 1 ? "" : n}d${die} (${rolls.join(", ")})${mod ? (mod > 0 ? " + " : " − ") + Math.abs(mod) : ""}` };
+}
+function logRoll(encId, entry) { S.encDice[encId] = [entry, ...(S.encDice[encId] || [])].slice(0, 10); }
+function encDice(c) {
+  const i = c.id, cfg = S.encDiceCfg[i] || {}, log = S.encDice[i] || [], last = log[0];
+  return `<div class="msec enc-dice" aria-label="Dice"><h3>Dice</h3>
+    <div class="dice-ctl">
+      <label class="mf"><span>Dice</span><input type="number" min="1" max="20" value="${esc(cfg.count || 1)}" data-encdice="count" data-id="${esc(i)}"></label>
+      <label class="mf"><span>Modifier</span><input type="number" value="${esc(cfg.mod || 0)}" data-encdice="mod" data-id="${esc(i)}"></label>
+      <label class="mf"><span>d20 rolls</span><select data-encdice="mode" data-id="${esc(i)}">${[["normal", "Normal"], ["adv", "Advantage"], ["dis", "Disadvantage"]].map(([v, l]) => `<option value="${v}" ${(cfg.mode || "normal") === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    </div>
+    <div class="dice-row">${ENC_DICE.map(n => `<button type="button" class="btn" data-do="enc-die" data-id="${esc(i)}" data-die="${n}">d${n}</button>`).join("")}</div>
+    ${last ? `<div class="enc-last" aria-live="polite"><b class="dice-result">${last.total}</b><span>${last.html || esc(last.text)}</span></div>
+      ${log.length > 1 ? `<ul class="dice-log">${log.slice(1).map(r => `<li>${r.html || esc(r.text)}</li>`).join("")}</ul>` : ""}`
+      : `<p class="hint">Rolls show here and aren't saved. Open a creature's stat block with ▸ and click an attack bonus, damage dice or save to roll it.</p>`}
+  </div>`;
+}
+Object.assign(ACTIONS, {
+  "enc-sb": d => { const k = d.id + "|" + d.k; S.encSb.has(k) ? S.encSb.delete(k) : S.encSb.add(k); renderModule(); },
+  "enc-die": d => {
+    const cfg = S.encDiceCfg[d.id] || {}, count = clamp(int(cfg.count) || 1, 1, 20), mod = int(cfg.mod);
+    const r = rollExprFull(`${count}d${d.die}${mod ? (mod > 0 ? "+" : "") + mod : ""}`, cfg.mode);
+    logRoll(d.id, { total: r.total, text: `${r.text} = ${r.total}` });
+    renderModule();
+  },
+  "enc-roll": d => {
+    const cfg = S.encDiceCfg[d.id] || {}, what = d.what, who = d.who || "Creature";
+    const r = rollExprFull(d.expr, what === "damage" ? "normal" : cfg.mode); if (!r) return;
+    let note = "";
+    if (what !== "damage" && r.nat === 20) note = what === "attack" ? " · Natural 20: critical hit!" : " · Natural 20";
+    if (what !== "damage" && r.nat === 1) note = what === "attack" ? " · Natural 1: miss" : " · Natural 1";
+    let crit = "";
+    if (what === "damage" && r.rolls) { const extra = Array.from({ length: r.n }, () => 1 + Math.floor(Math.random() * r.die)); crit = ` · on a crit ${r.total + extra.reduce((s, x) => s + x, 0)}`; }
+    const label = what === "attack" ? "attack" : what === "save" ? "save" : "damage";
+    logRoll(d.id, { total: r.total, text: `${who} ${label}: ${r.text} = ${r.total}${note}${crit}`, html: `<b>${esc(who)}</b> ${label}: ${esc(r.text)} = <b>${r.total}</b>${esc(note)}${esc(crit)}` });
+    toast(`${who} ${label}: ${r.total}${note}${crit}`);
+    renderModule();
+  },
+});
+document.addEventListener("input", e => { const el = e.target.closest?.("[data-encdice]"); if (el) (S.encDiceCfg[el.dataset.id] ||= {})[el.dataset.encdice] = el.value; });
+document.addEventListener("change", e => { const el = e.target.closest?.("[data-encdice]"); if (el) (S.encDiceCfg[el.dataset.id] ||= {})[el.dataset.encdice] = el.value; });
 
 
 /* ---------- boot ---------- */

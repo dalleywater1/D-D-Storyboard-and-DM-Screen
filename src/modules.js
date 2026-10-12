@@ -552,8 +552,8 @@ function combatDetail(c) {
           <td class="num" style="width:64px">${fInput(m, i, `monsters.${n}.ac`, null, { type: "number", aria: `Monster ${n + 1} AC` })}</td>
           <td class="num" style="width:72px">${fInput(m, i, `monsters.${n}.hp`, null, { type: "number", aria: `Monster ${n + 1} HP` })}</td>
           <td class="num mono" style="width:80px">${fmtN((CR_XP[mo.cr] ?? 0) * Math.max(0, int(mo.count)))}</td>
-          <td style="width:76px"><span class="actions" style="flex-wrap:nowrap;gap:4px">${mo.srd ? `<button type="button" class="icon-btn" data-do="goto" data-tab="bestiary" data-id="${esc(mo.srd)}" aria-label="Stat block for ${esc(mo.name)}" title="Stat block">i</button>` : mo.npc ? `<button type="button" class="icon-btn" data-do="goto" data-tab="npcs" data-id="${esc(mo.npc)}" aria-label="NPC page for ${esc(mo.name)}" title="NPC stat block">i</button>` : ""}${S.canWrite ? `<button type="button" class="icon-btn" data-do="mon-del" data-id="${esc(i)}" data-n="${n}" aria-label="Remove monster">×</button>` : ""}</span></td>
-        </tr>`).join("")}</tbody></table></div>` : `<p class="hint">No monsters yet.</p>`}
+          <td style="width:110px"><span class="actions" style="flex-wrap:nowrap;gap:4px">${typeof sbToggle === "function" ? sbToggle(c, mo, "mon:" + n) : ""}${mo.srd ? `<button type="button" class="icon-btn" data-do="goto" data-tab="bestiary" data-id="${esc(mo.srd)}" aria-label="Stat block for ${esc(mo.name)}" title="Stat block">i</button>` : mo.npc ? `<button type="button" class="icon-btn" data-do="goto" data-tab="npcs" data-id="${esc(mo.npc)}" aria-label="NPC page for ${esc(mo.name)}" title="NPC stat block">i</button>` : ""}${S.canWrite ? `<button type="button" class="icon-btn" data-do="mon-del" data-id="${esc(i)}" data-n="${n}" aria-label="Remove monster">×</button>` : ""}</span></td>
+        </tr>${typeof sbOpenBlock === "function" ? sbOpenBlock(c, mo, "mon:" + n, "row") : ""}`).join("")}</tbody></table></div>` : `<p class="hint">No monsters yet.</p>`}
       ${S.canWrite ? `<div class="add-row"><input id="best-add-${esc(i)}" list="srd-monster-list" data-change="best-add" data-id="${esc(i)}" placeholder="Add from the Bestiary: type a creature name" aria-label="Add a creature from the Bestiary"><button type="button" class="btn" data-do="mon-add" data-id="${esc(i)}">+ Blank row</button></div>` : ""}
       <div class="diffrow"><div class="diff ${st.tone}">${st.label}</div><div class="mono hint">${fmtN(st.total)} XP${st.size ? ` · High budget ${fmtN(st.b[2])}` : ""}</div></div>
       <div class="meter" role="img" aria-label="${esc(`${st.label}: ${st.total} XP against budgets of ${st.b.join(", ")}`)}">
@@ -562,6 +562,7 @@ function combatDetail(c) {
       </div>
     </div>
     <div class="mgrid">${fArea(m, i, "tactics", "Tactics", { rows: 3, ph: "How the monsters fight, and when they flee" })}${fArea(m, i, "loot", "Loot & rewards", { rows: 3 })}</div>
+    ${typeof encDice === "function" ? encDice(c) : ""}
     ${tracker(c)}
     <div class="md-foot"><span class="spacer"></span>${delBtn("combat", i, "Delete encounter", "del-combat")}</div>
   </section>`;
@@ -592,12 +593,12 @@ function tracker(c) {
       const active = x.id === run.active, down = x.hp !== "" && x.hp != null && Number(x.hp) <= 0;
       return `<div class="init-row ${active ? "active" : ""} ${down ? "down" : ""}" id="row-${esc(x.id)}">
         ${fInput(m, i, `run.list.${x.n}.init`, null, { type: "number", aria: `Initiative for ${x.name}`, ph: "Init" })}
-        <div class="nm">${active ? `<span class="turn-tag">Turn</span>` : ""}<b>${esc(x.name)}</b>${x.pc ? pill("PC", "muted") : ""}<span class="hint">AC ${esc(x.ac || "—")}</span></div>
+        <div class="nm">${active ? `<span class="turn-tag">Turn</span>` : ""}${typeof sbToggle === "function" ? sbToggle(c, x, "run:" + x.id) : ""}<b>${esc(x.name)}</b>${x.pc ? pill("PC", "muted") : ""}<span class="hint">AC ${esc(x.ac || "—")}</span></div>
         <div class="hp">${fInput(m, i, `run.list.${x.n}.hp`, null, { type: "number", aria: `Hit points for ${x.name}`, ph: "HP" })}<span class="hint">/ ${esc(x.max || "—")}</span></div>
         <div class="conds">${(x.cond || []).map((cd, k) => `<span class="cchip">${esc(cd)}<button type="button" data-do="cond-del" data-id="${esc(i)}" data-n="${x.n}" data-k="${k}" aria-label="Remove ${esc(cd)} from ${esc(x.name)}">×</button></span>`).join("")}
           ${S.canWrite ? `<select data-change="cond-add" data-id="${esc(i)}" data-n="${x.n}" aria-label="Add a condition to ${esc(x.name)}"><option value="">+ Condition</option>${CONDITIONS.filter(cd => !(x.cond || []).includes(cd)).map(cd => `<option>${cd}</option>`).join("")}</select>` : ""}</div>
         ${S.canWrite ? `<button type="button" class="icon-btn" data-do="run-del" data-id="${esc(i)}" data-n="${x.n}" aria-label="Remove ${esc(x.name)}">×</button>` : ""}
-      </div>`;
+      </div>${typeof sbOpenBlock === "function" ? sbOpenBlock(c, x, "run:" + x.id, "init-sb") : ""}`;
     }).join("")}</div>
     ${S.canWrite ? `<div class="add-row"><input id="run-name" placeholder="Add someone: name" aria-label="Combatant name"><input id="run-init" class="short" type="number" placeholder="Init" aria-label="Initiative"><input id="run-hp" class="short" type="number" placeholder="HP" aria-label="Hit points"><button type="button" class="btn" data-do="run-add" data-id="${esc(i)}">Add</button></div>
     <div class="actions">${S.confirm === "end" + i ? `<span class="confirm">End this combat? <button type="button" class="btn danger" data-do="run-end" data-id="${esc(i)}">End combat</button><button type="button" class="btn" data-do="cancel">Keep going</button></span>` : `<button type="button" class="btn" data-do="ask" data-key="end${esc(i)}">End combat</button>`}</div>` : ""}
@@ -683,7 +684,7 @@ const ACTIONS = {
     const list = guildParty().map(p => ({ id: uid(), name: p.char || p.player, pc: true, init: "", hp: p.hp === "" || p.hp == null ? "" : Number(p.hp), max: p.hp || "", ac: p.ac || "", cond: [] }));
     for (const mo of c.monsters || []) {
       const n = Math.max(0, int(mo.count));
-      for (let k = 0; k < n; k++) list.push({ id: uid(), name: (mo.name || "Monster") + (n > 1 ? " " + (k + 1) : ""), pc: false, init: "", hp: mo.hp === "" || mo.hp == null ? "" : Number(mo.hp), max: mo.hp || "", ac: mo.ac || "", cond: [] });
+      for (let k = 0; k < n; k++) list.push({ id: uid(), name: (mo.name || "Monster") + (n > 1 ? " " + (k + 1) : ""), pc: false, init: "", hp: mo.hp === "" || mo.hp == null ? "" : Number(mo.hp), max: mo.hp || "", ac: mo.ac || "", cond: [], ...(mo.srd ? { srd: mo.srd } : mo.npc ? { npc: mo.npc } : {}) });
     }
     if (!list.length) { toast("Add a monster or fill in the party first"); return; }
     c.run = { round: 1, active: sortedRun(list)[0].id, list };

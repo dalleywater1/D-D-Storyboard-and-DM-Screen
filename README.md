@@ -11,7 +11,7 @@ A campaign planner for D&D 5e (2024 rules) in a single web page. Open it in any 
 - **Sessions**: strong start, the cards you plan to use, secrets & clues, prep notes, recap.
 - **Meta Plot**: premise, the big secret, and storyline threads with stages and progress.
 - **NPCs** and **Towns**: role, town, attitude, voice, secrets; who lives where. NPCs get a portrait, an editable stat block (start from any Bestiary creature) and weapons with attacks worked out for you and Attack/Damage roll buttons, and can be added to an encounter or dropped on the DM Screen.
-- **Combats**: encounter builder with the 2024 XP budgets, and an initiative tracker with HP and conditions.
+- **Combats**: encounter builder with the 2024 XP budgets, an initiative tracker with HP and conditions, a dice roller, and a ▸ on every monster to open its stat block in place, where attack bonuses, damage dice and saves roll with a click.
 - **Bestiary**: 341 SRD creatures with full stat blocks, plus your own **homebrew** creatures (start blank or from a copy of any SRD creature). Add them to an encounter or drop them on the DM Screen.
 - **Reference**: spells, magic items, conditions, equipment, feats, weapon mastery and more.
 - **DM Screen**: rules panels plus your own (Encounter, Monster, Day counter for expiring potions, Dice roller, Notes). Drag panels anywhere, resize them, colour them.

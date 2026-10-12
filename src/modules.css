@@ -72,7 +72,7 @@
 .glance button .progress { grid-column: 1 / -1; }
 
 /* ---------- combats ---------- */
-.mtable-wrap { overflow-x: auto; }
+.mtable-wrap { overflow-x: auto; position: relative; }
 table.mt { border-collapse: collapse; width: 100%; }
 .mt th { text-align: left; font: 500 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 4px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .mt td { padding: 3px 4px; border-bottom: 1px solid var(--line); }
@@ -407,3 +407,17 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
 .hb-lore { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
 .hb-lore summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
 .hb-lore p { margin: 6px 0; }
+
+/* Encounter dice and stat blocks */
+.enc-dice .dice-ctl { display: grid; grid-template-columns: repeat(3, minmax(0, 160px)); gap: 10px; }
+.enc-last { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.enc-last .dice-result { font: 30px/1 var(--f-display); color: var(--accent); }
+.sb-tog { font-size: 12px; }
+.enc-sb { margin: 6px 0 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); min-width: 0; overflow-wrap: anywhere; }
+.mt tr.sb-row td { border-bottom: 1px solid var(--line); padding: 0 4px 6px; }
+.init-sb { margin: -2px 0 8px 0; }
+.tracker .enc-sb { margin-left: 8px; }
+button.rl { font: inherit; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 5px; padding: 0 5px; cursor: pointer; line-height: 1.5; }
+button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+@media (max-width: 520px) { .enc-dice .dice-ctl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
