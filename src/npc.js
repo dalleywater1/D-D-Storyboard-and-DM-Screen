@@ -28,7 +28,8 @@ function blankSb() { return { size: "Medium", type: "humanoid", al: "", ac: 12, 
 function portraitBlock(c) {
   const can = S.canWrite && S.assets;
   return `<div class="portrait">
-    ${c.imageId && blobUrl(c.imageId) ? `<img class="md-img" src="${blobUrl(c.imageId)}" alt="Portrait of ${esc(c.title || "NPC")}">` : `<div class="md-img portrait-empty" aria-hidden="true">${esc((c.title || "?").trim().charAt(0).toUpperCase())}</div>`}
+    ${c.imageId && blobUrl(c.imageId) ? `<img class="md-img${S.canWrite ? " pos-drag" : ""}" src="${blobUrl(c.imageId)}" alt="Portrait of ${esc(c.title || "NPC")}" draggable="false" style="object-position:${imgPos(c)}"${S.canWrite ? ` data-pos-id="${esc(c.id)}" tabindex="0" title="Drag to move the picture in the frame (or use the arrow keys)"` : ""}>
+      ${S.canWrite ? `<span class="hint portrait-hint">Drag the picture to move it</span>` : ""}` : `<div class="md-img portrait-empty" aria-hidden="true">${esc((c.title || "?").trim().charAt(0).toUpperCase())}</div>`}
     ${can ? `<label class="btn small">${c.imageId ? "Replace" : "Add portrait"}<input type="file" accept="image/*" data-portrait="${esc(c.id)}" hidden></label>` : ""}
     ${c.imageId ? `<button type="button" class="btn ghost small" data-do="portrait-dl" data-id="${esc(c.id)}">Download</button>` : ""}
     ${c.imageId && S.canWrite ? `<button type="button" class="btn ghost small" data-do="portrait-rm" data-id="${esc(c.id)}">Remove</button>` : ""}
@@ -231,3 +232,41 @@ CHANGES["npc-w-add"] = (d, el) => {
   toast(`${w.n} added`);
 };
 document.body.insertAdjacentHTML("beforeend", `<datalist id="srd-weapon-list">${[...WEAPONS.values()].map(w => `<option value="${esc(w.n)}">`).join("")}</datalist>`);
+
+/* ----- moving a picture inside its frame: drag it, or arrow keys when it has focus ----- */
+let posDrag = null;
+const curPos = c => imgPos(c).split(" ").map(v => parseFloat(v));
+function savePos(id, x, y) { commit("cards", id, "imgPos", { x: Math.round(x), y: Math.round(y) }); }
+document.addEventListener("pointerdown", e => {
+  const img = e.target.closest?.("img[data-pos-id]"); if (!img || e.button !== 0) return;
+  const c = S.cards.get(img.dataset.posId); if (!c) return;
+  e.preventDefault();
+  const [x, y] = curPos(c), r = img.getBoundingClientRect();
+  // how far the picture overflows the frame, so dragging moves it 1:1 under the pointer
+  const sc = Math.max(r.width / (img.naturalWidth || r.width), r.height / (img.naturalHeight || r.height));
+  const ox = Math.max(1, (img.naturalWidth || r.width) * sc - r.width), oy = Math.max(1, (img.naturalHeight || r.height) * sc - r.height);
+  posDrag = { img, id: c.id, sx: e.clientX, sy: e.clientY, x, y, nx: x, ny: y, ox, oy, pid: e.pointerId };
+  S.holdRender = true; img.classList.add("dragging");
+  try { img.setPointerCapture(e.pointerId); } catch {}
+});
+document.addEventListener("pointermove", e => {
+  const d = posDrag; if (!d || e.pointerId !== d.pid) return;
+  d.nx = Math.min(100, Math.max(0, d.x - (e.clientX - d.sx) / d.ox * 100));
+  d.ny = Math.min(100, Math.max(0, d.y - (e.clientY - d.sy) / d.oy * 100));
+  d.img.style.objectPosition = `${d.nx}% ${d.ny}%`;
+});
+function endPosDrag(e) {
+  const d = posDrag; if (!d || (e && e.pointerId !== d.pid)) return;
+  posDrag = null; S.holdRender = false; d.img.classList.remove("dragging");
+  if (Math.abs(d.nx - d.x) + Math.abs(d.ny - d.y) > 0.5) { savePos(d.id, d.nx, d.ny); render(); }
+}
+document.addEventListener("pointerup", endPosDrag);
+document.addEventListener("pointercancel", endPosDrag);
+document.addEventListener("keydown", e => {
+  const img = e.target.closest?.("img[data-pos-id]"); if (!img) return;
+  const k = { ArrowLeft: [5, 0], ArrowRight: [-5, 0], ArrowUp: [0, 5], ArrowDown: [0, -5] }[e.key]; if (!k) return;
+  e.preventDefault();
+  const c = S.cards.get(img.dataset.posId); if (!c) return;
+  const [x, y] = curPos(c); savePos(c.id, Math.min(100, Math.max(0, x + k[0])), Math.min(100, Math.max(0, y + k[1]))); render();
+  setTimeout(() => document.querySelector(`img[data-pos-id="${img.dataset.posId}"]`)?.focus(), 30);
+});

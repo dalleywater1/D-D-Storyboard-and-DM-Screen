@@ -345,3 +345,7 @@ body.panel-resizing, body.panel-resizing * { cursor: nwse-resize !important; use
 .portrait .md-img { width: 184px; height: 230px; }
 .portrait-empty { font-size: 64px; }
 @media (max-width: 520px) { .portrait { grid-template-columns: 140px; } .portrait .md-img { width: 140px; height: 175px; } }
+.portrait .pos-drag { cursor: grab; touch-action: none; user-select: none; }
+.portrait .pos-drag.dragging { cursor: grabbing; outline: 2px solid var(--accent); outline-offset: 2px; }
+.portrait .pos-drag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.portrait-hint { font-size: 12px; text-align: center; }

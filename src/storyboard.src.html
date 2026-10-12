@@ -709,7 +709,9 @@ function render() {
 }
 function colorAttrs(c) { return c.color && COLORS.includes(c.color) ? { cls: "has-color", style: `--cc:var(--c-${c.color});` } : { cls: "", style: "" }; }
 function blobUrl(id) { return window.__blobUrl ? window.__blobUrl(id) : "/_blob/" + id; }
-function imgHtml(c) { return c.imageId && /^[0-9a-f]{32}$/.test(c.imageId) && blobUrl(c.imageId) ? `<img class="c-img" src="${blobUrl(c.imageId)}" alt="" draggable="false" loading="lazy">` : ""; }
+/* where a picture sits in its frame (percent across and down); new pictures favour the top so heads show */
+function imgPos(c) { const p = c.imgPos || {}; const n = (v, d) => Math.min(100, Math.max(0, Number.isFinite(+v) && v !== "" && v != null ? +v : d)); return `${n(p.x, 50)}% ${n(p.y, 10)}%`; }
+function imgHtml(c) { return c.imageId && /^[0-9a-f]{32}$/.test(c.imageId) && blobUrl(c.imageId) ? `<img class="c-img" src="${blobUrl(c.imageId)}" alt="" draggable="false" loading="lazy" style="object-position:${imgPos(c)}">` : ""; }
 function linkSummary(c) {
   const names = (c.links || []).map(l => S.cards.get(l.to)).filter(Boolean).map(t => t.title);
   return names.length ? `<div class="c-links">→ ${esc(names.join(", "))}</div>` : "";
@@ -1401,7 +1403,6 @@ render();
     render(); renderBoards(); return;
   }
   S.db = db;
-  if (window.__sbInitialBoard) S.board = window.__sbInitialBoard;
   // The campaign list: the original board plus any others.
   db.doc("meta/campaign").onSnapshot(snap => {
     S.mainName = snap.exists ? (snap.data().name || "My Campaign") : "My Campaign"; renderBoards();

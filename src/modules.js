@@ -475,7 +475,7 @@ function townDetail(c) {
   const m = "cards", i = c.id;
   const people = cardsOf("npc").filter(x => x.town === i);
   return `<section class="mdetail" aria-label="Town">
-    <div class="md-top">${c.imageId ? `<img class="md-img" src="${blobUrl(c.imageId)}" alt="">` : ""}
+    <div class="md-top">${c.imageId ? `<img class="md-img" src="${blobUrl(c.imageId)}" alt="" style="object-position:${imgPos(c)}">` : ""}
       <div class="mgrid">
         ${fInput(m, i, "title", "Name", { wide: true, cls: "big" })}
         ${fSelect(m, i, "size", "Size", TOWN_SIZES, { dflt: "Village" })}
