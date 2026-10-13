@@ -421,3 +421,12 @@ button.rl { font: inherit; font-weight: 700; color: var(--accent); background: c
   border-radius: 5px; padding: 0 5px; cursor: pointer; line-height: 1.5; }
 button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 @media (max-width: 520px) { .enc-dice .dice-ctl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* GitHub saves */
+.gh-box { display: grid; gap: 8px; }
+.gh-help { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; background: var(--bg); font-size: 14px; }
+.gh-help summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.gh-help ol { margin: 6px 0; padding-left: 20px; display: grid; gap: 4px; }
+#gh-msg:empty { display: none; }
+#gh-msg .actions { margin-top: 6px; }
+#gh-quick.gh-newer { border-color: var(--warn); color: var(--warn); }

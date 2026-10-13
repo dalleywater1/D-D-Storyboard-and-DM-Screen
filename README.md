@@ -25,6 +25,7 @@ Everything you make is saved in **your browser** on the computer you use it on. 
 - To move or share a campaign: **Backup → Download this campaign**, then **Load a file** in the other copy. You choose whether it's added as a new campaign or updates one with the same name.
 - To move everything at once: **Backup → Download everything**.
 - Clearing your browser's site data deletes what's saved, so download a backup now and then.
+- **Save to GitHub**: in Backup, connect a *private* GitHub repo with a fine-grained token (Contents: Read and write on that repo only). Then Save to GitHub / Load from GitHub moves everything between computers, and each save is kept in the repo's history. The site warns you before replacing a newer save made on another computer. The repo name and token stay in the browser you enter them in.
 
 ## Fallen Lands campaign content
 
