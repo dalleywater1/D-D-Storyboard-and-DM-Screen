@@ -590,6 +590,7 @@ function tracker(c) {
       ${S.canWrite ? `<button type="button" class="btn" data-do="run-roll" data-id="${esc(i)}">Roll monster initiative</button>
       <button type="button" class="btn" data-do="run-prev" data-id="${esc(i)}">Previous</button>
       <button type="button" class="btn primary" data-do="run-next" data-id="${esc(i)}">Next turn</button>` : ""}
+      ${typeof turnToggle === "function" ? turnToggle() : ""}
     </div>
     <div class="tracker">${order.map(x => {
       const active = x.id === run.active, down = x.hp !== "" && x.hp != null && Number(x.hp) <= 0;
@@ -600,7 +601,7 @@ function tracker(c) {
         <div class="conds">${(x.cond || []).map((cd, k) => `<span class="cchip">${esc(cd)}<button type="button" data-do="cond-del" data-id="${esc(i)}" data-n="${x.n}" data-k="${k}" aria-label="Remove ${esc(cd)} from ${esc(x.name)}">×</button></span>`).join("")}
           ${S.canWrite ? `<select data-change="cond-add" data-id="${esc(i)}" data-n="${x.n}" aria-label="Add a condition to ${esc(x.name)}"><option value="">+ Condition</option>${CONDITIONS.filter(cd => !(x.cond || []).includes(cd)).map(cd => `<option>${cd}</option>`).join("")}</select>` : ""}</div>
         ${S.canWrite ? `<button type="button" class="icon-btn" data-do="run-del" data-id="${esc(i)}" data-n="${x.n}" aria-label="Remove ${esc(x.name)}">×</button>` : ""}
-      </div>${typeof sbOpenBlock === "function" ? sbOpenBlock(c, x, "run:" + x.id, "init-sb") : ""}`;
+      </div>${typeof sbOpenBlock === "function" ? sbOpenBlock(c, x, "run:" + x.id, "init-sb") : ""}${active && typeof turnCard === "function" ? turnCard(c, x) : ""}`;
     }).join("")}</div>
     ${S.canWrite ? `<div class="add-row"><input id="run-name" placeholder="Add someone: name" aria-label="Combatant name"><input id="run-init" class="short" type="number" placeholder="Init" aria-label="Initiative"><input id="run-hp" class="short" type="number" placeholder="HP" aria-label="Hit points"><button type="button" class="btn" data-do="run-add" data-id="${esc(i)}">Add</button></div>
     <div class="actions">${S.confirm === "end" + i ? `<span class="confirm">End this combat? <button type="button" class="btn danger" data-do="run-end" data-id="${esc(i)}">End combat</button><button type="button" class="btn" data-do="cancel">Keep going</button></span>` : `<button type="button" class="btn" data-do="ask" data-key="end${esc(i)}">End combat</button>`}</div>` : ""}

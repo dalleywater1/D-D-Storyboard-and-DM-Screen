@@ -430,3 +430,14 @@ button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent)
 #gh-msg:empty { display: none; }
 #gh-msg .actions { margin-top: 6px; }
 #gh-quick.gh-newer { border-color: var(--warn); color: var(--warn); }
+
+/* The active monster's abilities on its turn */
+.turn-card { margin: 2px 0 10px 8px; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-left: 4px solid var(--accent);
+  border-radius: 8px; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.tc-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.tc-head b { font: 17px var(--f-display); color: var(--accent); }
+.tc-sec h4 { margin: 4px 0 2px; font: 600 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tc-sec .sb-entry { margin: 2px 0; }
+.tc-traits summary { cursor: pointer; font: 600 12px var(--f-mono); letter-spacing: .04em; color: var(--muted); min-height: 28px; display: flex; align-items: center; }
+.tc-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-left: auto; }
+.ctrack .turn-card { margin-left: 0; padding: 8px 10px; font-size: 13px; }

@@ -38,7 +38,7 @@ function rollable(html, encId, who) {
   const btn = (expr, label, what) => `<button type="button" class="rl" data-do="enc-roll" data-id="${esc(encId)}" data-expr="${expr}" data-who="${esc(who)}" data-what="${what}" title="Roll ${what}">${label}</button>`;
   const num = s => String(s).replace("−", "-").replace(/\s+/g, "");
   // damage dice only in the traits/actions sections, so "HP 10 (3d6)" stays plain
-  const k = html.indexOf('class="sb-sec"'), head = k < 0 ? html : html.slice(0, k), body = k < 0 ? "" : html.slice(k);
+  const k = html.indexOf('class="sb-sec'), head = k < 0 ? html : html.slice(0, k), body = k < 0 ? "" : html.slice(k);
   return (head.replace(/save ([+−-]\d+)/g, (_, b) => "save " + btn("d20" + num(b), b, "save")) + body
     .replace(/(Attack Roll:(?:<\/i>)?\s*)([+−-]\d+)/g, (_, a, b) => a + btn("d20" + num(b), b, "attack"))
     .replace(/(\d+) \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\)/g, (_, avg, e) => `${avg} (${btn(num(e), e, "damage")})`));
@@ -92,3 +92,24 @@ Object.assign(ACTIONS, {
 });
 document.addEventListener("input", e => { const el = e.target.closest?.("[data-encdice]"); if (el) (S.encDiceCfg[el.dataset.id] ||= {})[el.dataset.encdice] = el.value; });
 document.addEventListener("change", e => { const el = e.target.closest?.("[data-encdice]"); if (el) (S.encDiceCfg[el.dataset.id] ||= {})[el.dataset.encdice] = el.value; });
+
+/* ----- the active monster's abilities, shown under its row on its turn ----- */
+S.turnCard = lsGet("sb-turncard", true);
+function turnCard(c, x) {
+  if (!S.turnCard || !x || x.pc) return "";
+  if (S.encSb.has(c.id + "|run:" + x.id)) return "";   // its full stat block is already open
+  const m = monFor(c, x); if (!m) return "";
+  const entries = list => list.map(([n, d]) => `<div class="sb-entry"><b>${esc(n)}.</b> ${md(d).replace(/^<p>/, "").replace(/<\/p>$/, "")}</div>`).join("");
+  const sec = (t, list) => list && list.length ? `<div class="sb-sec tc-sec"><h4>${t}</h4>${entries(list)}</div>` : "";
+  const facts = [m.n !== x.name && !String(x.name).startsWith(m.n) ? m.n : "", `AC ${m.ac}`, `Speed ${m.sp}`, m.sv ? `Saves ${m.sv}` : "", m.re ? `Resists ${m.re}` : "", m.im || m.ci ? `Immune ${[m.im, m.ci].filter(Boolean).join("; ")}` : ""].filter(Boolean);
+  const html = `<div class="turn-card" aria-label="${esc(x.name)}'s turn">
+    <div class="tc-head"><b>${esc(x.name)}'s turn</b><span class="hint">${esc(facts.join(" · "))}</span></div>
+    ${sec("Actions", m.a)}${sec("Bonus Actions", m.b)}${sec("Reactions", m.r)}${sec("Legendary Actions", m.l)}
+    ${m.tr && m.tr.length ? `<details class="tc-traits"><summary>Traits (${m.tr.length})</summary><div class="sb-sec tc-sec">${entries(m.tr)}</div></details>` : ""}
+  </div>`;
+  return rollable(html, c.id, x.name);
+}
+function turnToggle() {
+  return `<label class="tc-toggle"><input type="checkbox" data-turncard ${S.turnCard ? "checked" : ""}> Show abilities on their turn</label>`;
+}
+document.addEventListener("change", e => { if (e.target.matches?.("[data-turncard]")) { S.turnCard = e.target.checked; lsSet("sb-turncard", S.turnCard); renderModule(); } });

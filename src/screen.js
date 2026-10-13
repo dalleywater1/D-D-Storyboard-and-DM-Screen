@@ -210,7 +210,7 @@ function encounterPanel(d) {
             ${(x.cond || []).map((cd, k) => `<span class="cchip">${esc(cd)}<button type="button" data-do="cond-del" data-id="${esc(cid)}" data-n="${x.n}" data-k="${k}" aria-label="Remove ${esc(cd)}">×</button></span>`).join("")}
             ${S.canWrite ? `<select class="csel" data-change="cond-add" data-id="${esc(cid)}" data-n="${x.n}" aria-label="Add a condition to ${esc(x.name)}"><option value="">+</option>${CONDITIONS.filter(cd => !(x.cond || []).includes(cd)).map(cd => `<option>${cd}</option>`).join("")}</select>` : ""}</div>
           <div class="hp">${fInput("combats", cid, `run.list.${x.n}.hp`, null, { type: "number", aria: `HP for ${x.name}`, ph: "HP" })}<span class="hint">/${esc(x.max || "—")}</span></div>
-        </div>`; }).join("")}</div>
+        </div>${active && typeof turnCard === "function" ? turnCard(c, x) : ""}`; }).join("")}</div>
       ${S.canWrite ? (S.confirm === "end" + cid ? `<span class="confirm">End this combat? <button type="button" class="btn danger small" data-do="run-end" data-id="${esc(cid)}">End combat</button><button type="button" class="btn small" data-do="cancel">Keep going</button></span>` : `<div><button type="button" class="btn small" data-do="ask" data-key="end${esc(cid)}">End combat</button></div>`) : ""}`;
   }
   return `<h2>${esc(c.title || "Encounter")}</h2>
