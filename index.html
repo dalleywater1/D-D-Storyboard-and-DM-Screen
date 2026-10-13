@@ -1412,6 +1412,62 @@ function hushedUpdate(docs) {
   return writes;
 }
 
+// Hushed Dissonance handover, 13 October 2026: the seventh Hushed variant
+// (disruption / anti-caster), plus the seven-variant roster in the shared lore.
+// The concept gave AC 15–16, HP ~50 and CR 2; the exact numbers below were set to
+// match the other six and are listed in the creature's role note so they can be tuned.
+const HUSHED_ROSTER = [
+  '',
+  '### The seven variants',
+  '| Hushed | Role |',
+  '|---|---|',
+  '| Drone | Basic expendable operative |',
+  '| Staccato | Fast melee assault |',
+  '| Presto | Runner / retrieval |',
+  '| Bass | Defensive anchor |',
+  '| Crescendo | Heavy breacher |',
+  '| Dissonance | Disruption / anti-caster |',
+  '| Conductor | Commander |',
+  '',
+  'Seven variants quietly reinforce the manufactured Seven Stars structure.',
+].join('\n');
+const HUSHED_DISSONANCE = { id: 'hushed-dissonance', title: 'Hushed Dissonance',
+  role: 'Disruption / anti-caster. A Dissonance is sent when the target group contains spellcasters, healers, commanders, or anyone capable of disrupting the Composition. Where the Bass holds the line and the Crescendo breaks it, the Dissonance makes the enemy\'s plan fall apart. Its job isn\'t massive damage; it\'s there to be annoying as hell, interfering with spellcasters, opportunity attacks, pursuit, concentration and coordinated movement. Very useful for retrieval missions.\n\nLight/medium armour, dark-red mantle, a one-handed hooked spear and small arcane suppression devices.\n\n*Working numbers (from the concept: AC 15–16, HP ~50, CR 2): AC 15, HP 52, +4 to hit, save DC 12, Break the Rhythm 2d4 Psychic, Suppressing Pulse 10-foot radius. Adjust with Edit.*',
+  sb: hushedSb({ cr: '2', ac: 15, hp: 52, hd: '8d8 + 16', sp: '30 ft.', ab: [12, 14, 14, 11, 14, 6], sv: 'Con +4, Wis +4', sk: 'Arcana +2, Perception +4', se: 'Passive Perception 14',
+    g: 'Chain Shirt, hooked spear, arcane suppression devices',
+    a: ['Multiattack. The Dissonance makes two Discordant Strike attacks.',
+        'Discordant Strike. Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Piercing damage plus 3 (1d6) Psychic damage. If the target is concentrating, it has Disadvantage on the Constitution saving throw to maintain Concentration.',
+        'Suppressing Pulse (Recharge 5–6). Wisdom Saving Throw: DC 12, each creature of the Dissonance\'s choice in a 10-foot Emanation originating from it. Failure: The target can\'t take Reactions, and its Speed is reduced by 10 feet until the end of its next turn.'],
+    r: ['Break the Rhythm. Trigger: A creature the Dissonance can see within 30 feet of it casts a spell. Response: The caster makes a DC 12 Constitution saving throw. On a failure, it takes 5 (2d4) Psychic damage and can\'t take Reactions until the start of its next turn. The spell still takes effect.'] }) };
+
+function hushedDissonanceUpdate(docs) {
+  const markerName = 'hushed-dissonance-v1';
+  const norm = x => String(x || '').trim().toLowerCase().replace(/^the /, '');
+  const writes = [];
+  const boards = [...docs].filter(([path]) => path === 'meta/campaign' || /^boards\/[^/]+$/.test(path))
+    .map(([path, meta]) => ({ path, meta, board: path === 'meta/campaign' ? 'main' : path.split('/')[1] }));
+  const order = boards.filter(b => norm(b.meta && b.meta.name) === 'order of the seven stars');
+  const targets = order.length ? order : boards.filter(b => norm(b.meta && b.meta.name) === 'fallen lands' || docs.has('gmx/' + b.board + '/contentUpdates/fallen-lands-alessa-v1'));
+  for (const { board } of targets) {
+    const marker = 'gmx/' + board + '/contentUpdates/' + markerName;
+    if (docs.has(marker)) continue;
+    const cp = 'gmx/' + board + '/creatures/';
+    const existing = [...docs].filter(([p]) => p.startsWith(cp) && !p.slice(cp.length).includes('/'));
+    const now = new Date().toISOString();
+    const e = HUSHED_DISSONANCE;
+    const same = existing.find(([p, d]) => p === cp + e.id || norm(d && d.title) === norm(e.title));
+    const id = same ? same[0].slice(cp.length) : e.id, old = same ? same[1] : {};
+    writes.push([cp + id, { ...old, id, title: e.title, family: 'Hushed', role: e.role, lore: HUSHED_LORE + '\n' + HUSHED_ROSTER, sb: JSON.parse(JSON.stringify(e.sb)), created: old.created || now, updated: now }]);
+    // the other Hushed get the seven-variant roster added to their shared lore (once)
+    for (const [p, d] of existing) {
+      if (p === cp + id || !d || d.family !== 'Hushed' || String(d.lore || '').includes('The seven variants')) continue;
+      writes.push([p, { ...d, lore: (String(d.lore || '').trim() ? String(d.lore).trim() + '\n' : '') + HUSHED_ROSTER, updated: now }]);
+    }
+    writes.push([marker, { id: markerName, applied: now }]);
+  }
+  return writes;
+}
+
 // Session 1 handover ("The Red Cloaks"), 12 October 2026. Adds Session 1 to the
 // Sessions page of The Order of the Seven Stars (or, in a browser without that
 // campaign, the seeded Fallen Lands campaign) once, linking the Stormhollow NPC and
@@ -1525,6 +1581,7 @@ function fallenSession1Update(docs) {
         update.writes.push(...fallenLandsNetworkUpdate(new Map([...store, ...update.writes])));
         update.writes.push(...stormhollowUpdate(new Map([...store, ...update.writes])));
         if (typeof hushedUpdate === "function") update.writes.push(...hushedUpdate(new Map([...store, ...update.writes])));
+        if (typeof hushedDissonanceUpdate === "function") update.writes.push(...hushedDissonanceUpdate(new Map([...store, ...update.writes])));
         if (typeof fallenSession1Update === "function") update.writes.push(...fallenSession1Update(new Map([...store, ...update.writes])));
         if (update.writes.length) {
           await write("docs", s => { for (const [k, v] of update.writes) s.put(v, k); });
