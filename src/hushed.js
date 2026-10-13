@@ -188,3 +188,32 @@ function hushedDissonanceUpdate(docs) {
   }
   return writes;
 }
+
+// 13 October 2026: add one Hushed Dissonance to the Stormhollow Tavern Composition
+// (alongside the existing six). Skipped if the encounter is gone or already has one.
+function hushedCompositionDissonanceUpdate(docs) {
+  const markerName = 'hushed-composition-dissonance-v1';
+  const norm = x => String(x || '').trim().toLowerCase().replace(/^the /, '');
+  const writes = [];
+  const boards = [...docs].filter(([path]) => path === 'meta/campaign' || /^boards\/[^/]+$/.test(path))
+    .map(([path, meta]) => ({ path, meta, board: path === 'meta/campaign' ? 'main' : path.split('/')[1] }));
+  const order = boards.filter(b => norm(b.meta && b.meta.name) === 'order of the seven stars');
+  const targets = order.length ? order : boards.filter(b => norm(b.meta && b.meta.name) === 'fallen lands' || docs.has('gmx/' + b.board + '/contentUpdates/fallen-lands-alessa-v1'));
+  for (const { board } of targets) {
+    const marker = 'gmx/' + board + '/contentUpdates/' + markerName;
+    if (docs.has(marker)) continue;
+    const now = new Date().toISOString();
+    const cp = 'gmx/' + board + '/creatures/', ep = 'gmx/' + board + '/combats/';
+    const dis = [...docs].find(([p, d]) => p.startsWith(cp) && d && norm(d.title) === 'hushed dissonance');
+    const enc = [...docs].find(([p, d]) => p.startsWith(ep) && !p.slice(ep.length).includes('/') && d && (p === ep + HUSHED_ENCOUNTER.id || norm(d.title) === norm(HUSHED_ENCOUNTER.title)));
+    if (dis && enc) {
+      const [p, c] = enc, mons = c.monsters || [];
+      if (!mons.some(m => norm(m.name) === 'hushed dissonance')) {
+        const sb = dis[1].sb || {};
+        writes.push([p, { ...c, monsters: [...mons, { name: 'Hushed Dissonance', cr: sb.cr || '2', count: 1, ac: sb.ac ?? 15, hp: sb.hp ?? 52, srd: 'hb-' + dis[0].slice(cp.length) }] }]);
+      }
+    }
+    writes.push([marker, { id: markerName, applied: now }]);
+  }
+  return writes;
+}

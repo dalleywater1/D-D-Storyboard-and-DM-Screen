@@ -23,4 +23,15 @@ for (const n of ['drone', 'staccato', 'presto', 'bass', 'crescendo', 'conductor'
 assert.equal(docs.get('gmx/seven/creatures/hushed-bass').sb.hp, 70);
 assert.deepEqual(docs.get('gmx/seven/creatures/mine'), { id: 'mine', title: 'Shadow Wolf', family: '', lore: 'x' });
 assert.equal(ctx.hushedDissonanceUpdate(docs).length, 0, 'once');
-console.log('Passed Hushed Dissonance: seventh variant in The Order of the Seven Stars, shared traits, Discordant Strike / Break the Rhythm / Suppressing Pulse, roster added to all seven once, edits kept, once only.');
+// the Composition gains one Dissonance, once, keeping its other rows
+const enc0 = docs.get('gmx/seven/combats/stormhollow-tavern-composition');
+apply(docs, ctx.hushedCompositionDissonanceUpdate(docs));
+const enc = docs.get('gmx/seven/combats/stormhollow-tavern-composition');
+assert.deepEqual(enc.monsters.map(m => [m.name, m.count]), [...enc0.monsters.map(m => [m.name, m.count]), ['Hushed Dissonance', 1]]);
+assert.equal(enc.monsters.at(-1).srd, 'hb-hushed-dissonance'); assert.equal(enc.monsters.at(-1).hp, 52);
+assert.equal(ctx.hushedCompositionDissonanceUpdate(docs).length, 0, 'composition once');
+// already added by hand: no second row
+const d3 = new Map([['boards/s', { name: 'Order of the Seven Stars' }], ['gmx/s/creatures/x', { title: 'Hushed Dissonance', sb: { cr: '2' } }], ['gmx/s/combats/e', { title: 'Stormhollow Tavern Composition', monsters: [{ name: 'Hushed Dissonance', count: 1 }] }]]);
+apply(d3, ctx.hushedCompositionDissonanceUpdate(d3));
+assert.equal(d3.get('gmx/s/combats/e').monsters.length, 1);
+console.log('Passed Hushed Dissonance: seventh variant in The Order of the Seven Stars, shared traits, Discordant Strike / Break the Rhythm / Suppressing Pulse, roster added to all seven once, edits kept, once only; added once to the Stormhollow Tavern Composition.');

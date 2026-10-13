@@ -62,6 +62,7 @@
         update.writes.push(...stormhollowUpdate(new Map([...store, ...update.writes])));
         if (typeof hushedUpdate === "function") update.writes.push(...hushedUpdate(new Map([...store, ...update.writes])));
         if (typeof hushedDissonanceUpdate === "function") update.writes.push(...hushedDissonanceUpdate(new Map([...store, ...update.writes])));
+        if (typeof hushedCompositionDissonanceUpdate === "function") update.writes.push(...hushedCompositionDissonanceUpdate(new Map([...store, ...update.writes])));
         if (typeof fallenSession1Update === "function") update.writes.push(...fallenSession1Update(new Map([...store, ...update.writes])));
         if (update.writes.length) {
           await write("docs", s => { for (const [k, v] of update.writes) s.put(v, k); });
