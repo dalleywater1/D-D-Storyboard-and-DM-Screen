@@ -217,3 +217,135 @@ function hushedCompositionDissonanceUpdate(docs) {
   }
   return writes;
 }
+
+// Hushed revision handover, 14 October 2026 (changes made at the table):
+// Psychic Death Pulse on every Hushed; Bass gains Resonant Expansion; the
+// Dissonance becomes the Discord, the dedicated psychic mage (same ID, so
+// encounter rows and links keep working); shared lore gains the core identity,
+// the Death Pulse and the final variant table; and the first Hushed attack is
+// recorded at the PCs' house in Stormhollow, not The Broken Lantern. Edits are
+// targeted: lines are added or swapped, nothing unrelated is rewritten, and no
+// Broken Lantern material is removed. Runs once per campaign.
+const HUSHED_PULSE = { drone: ['1d8', 4], staccato: ['1d8', 4], presto: ['1d8', 4], bass: ['2d8', 9], discord: ['2d8', 9], crescendo: ['3d8', 13], conductor: ['4d8', 18] };
+const hushedPulseLine = (dice, avg, dc) => `Psychic Death Pulse. When the Hushed is reduced to 0 Hit Points, psychic energy erupts from its body. Wisdom Saving Throw: DC ${dc}, each creature within 10 feet of it. Failure: ${avg} (${dice}) Psychic damage. Success: Half damage. Not fire or force: sudden mental pressure, painful ringing, intrusive noise, flashes of alien memories and psychic static.`;
+const HUSHED_BASS_EXPANSION = 'Resonant Expansion. The Bass forces psychic energy through its body and immediately takes 10 damage that can\'t be reduced in any way (this can kill it). For 1 minute, or until it ends the effect (no action required) or falls Unconscious, it becomes Large, its reach increases by 5 feet, its melee attacks deal an extra 4 (1d8) damage of the weapon\'s type, and it has Advantage on Strength checks and Strength saving throws. Muscles swell, armour strains outward and its posture grows heavier: it is burning itself out to complete the mission.';
+const HUSHED_DISCORD = { title: 'Hushed Discord',
+  role: 'Psychic caster / battlefield disruption / mental assault. The Discord is the dedicated Hushed mage: not a wizard in red robes, and not a weapon fighter. Its magic is almost entirely psionic, manifesting as pressure inside the skull, overlapping whispers, distorted sound, mental static, brief visual distortions and memories flashing where they do not belong. A Discord dying should feel like a magical, psychic feedback event.\n\n*Working numbers (the handover suggested save DC 13–14 and +5 to hit): AC 12, HP 45, Intelligence casting with DC 13 and +5, Psychic Lash 60 ft. for 2d6 + 3, Dissonant Whispers and Mind Spike 2/Day each, Hold Person and Phantasmal Force 1/Day each, Shield 2/Day. Adjust with Edit.*',
+  sb: () => hushedSb({ cr: '2', ac: 12, hp: 45, hd: '10d8', sp: '30 ft.', ab: [9, 14, 10, 16, 14, 6], sv: 'Int +5, Wis +4', sk: 'Arcana +5, Perception +4', se: 'Passive Perception 14',
+    g: 'Dark-red field clothing',
+    tr: ['Break Concentration. When a creature that is concentrating takes damage from the Discord, it has Disadvantage on the next saving throw it makes to maintain Concentration before the end of the Discord\'s turn.',
+         hushedPulseLine('2d8', 9, 13)],
+    a: ['Multiattack. The Discord makes two Psychic Lash attacks.',
+        'Psychic Lash. Ranged Spell Attack Roll: +5, range 60 ft. Hit: 10 (2d6 + 3) Psychic damage, and the target can\'t take Reactions until the start of its next turn.',
+        'Spellcasting. The Discord casts one of the following spells, requiring no spell components and using Intelligence as the spellcasting ability (spell save DC 13, +5 to hit with spell attacks). At will: Mage Hand, Mind Sliver, Minor Illusion. 2/Day each: Dissonant Whispers, Mind Spike. 1/Day each: Hold Person, Phantasmal Force.'],
+    r: ['Shield (2/Day). Trigger: The Discord is hit by an attack roll or targeted by the Magic Missile spell. Response: The Discord casts Shield.'] }) };
+const HUSHED_LORE_V2 = [
+  '',
+  '### Core identity',
+  'All Hushed are living humanoids; former Dimmed who failed or rejected rehabilitation; stripped of most autobiographical identity; dressed in practical **dark-red** field clothing; unnaturally coordinated; emotionless rather than undead or zombie-like; and unconsciously humming **The Night Measure**.',
+  '',
+  '### Psychic Death Pulse',
+  'Every Hushed releases psychic energy when killed: each creature within 10 feet makes a Wisdom save (the Hushed\'s own save DC, or DC 12 + its Proficiency Bonus), taking Psychic damage equal to its CR in d8s (minimum 1d8) on a failure, half on a success. Describe it as sudden mental pressure, painful ringing, intrusive noise, flashes of alien memories and psychic static, never fire or physical force. This is a defining Hushed mechanic: killing a Hushed in the middle of the party is a tactical decision.',
+  '',
+  '### The seven variants',
+  '| Hushed | CR | Tactical role | Death Pulse |',
+  '|---|---|---|---|',
+  '| Drone | 1/2 | Expendable infantry | 1d8 |',
+  '| Staccato | 1 | Melee skirmisher | 1d8 |',
+  '| Presto | 1 | Retrieval / courier | 1d8 |',
+  '| Bass | 2 | Defensive tank / enlarging bruiser | 2d8 |',
+  '| Discord | 2 | Psychic mage | 2d8 |',
+  '| Crescendo | 3 | Heavy breacher | 3d8 |',
+  '| Conductor | 4 | Tactical commander | 4d8 |',
+  '',
+  '### Design principle',
+  'The seven variants are parts of a single **Composition**. **Drone** establishes the rhythm. **Bass** anchors it. **Staccato** attacks rapidly. **Presto** moves quickly. **Discord** disrupts the opposition through psychic magic. **Crescendo** escalates force. **Conductor** controls the whole performance.',
+  '',
+  'Keep the musical terminology subtle and clinical, never theatrical bards. The Hushed are frightening because they behave like **people reduced to functions**.',
+].join('\n');
+const HUSHED_HOUSE_NOTE = 'Played: the first Hushed attack happened at the house provided to the PCs in Stormhollow, not at The Broken Lantern (which remains Alessa Dupont\'s tavern).';
+
+function hushedRevisionUpdate(docs) {
+  const markerName = 'hushed-revision-2026-10-14';
+  const norm = x => String(x || '').trim().toLowerCase().replace(/^the /, '');
+  const writes = [];
+  const boards = [...docs].filter(([path]) => path === 'meta/campaign' || /^boards\/[^/]+$/.test(path))
+    .map(([path, meta]) => ({ path, meta, board: path === 'meta/campaign' ? 'main' : path.split('/')[1] }));
+  const order = boards.filter(b => norm(b.meta && b.meta.name) === 'order of the seven stars');
+  const targets = order.length ? order : boards.filter(b => norm(b.meta && b.meta.name) === 'fallen lands' || docs.has('gmx/' + b.board + '/contentUpdates/fallen-lands-alessa-v1'));
+  const inn = s => String(s || '').replace(/\bthe inn attack\b/gi, 'the attack on the PCs\' house').replace(/\binn attack\b/gi, 'house attack').replace(/\bStormhollow tavern raid\b/gi, 'first Stormhollow raid (played at the PCs\' house)');
+  for (const { path, board } of targets) {
+    const marker = 'gmx/' + board + '/contentUpdates/' + markerName;
+    if (docs.has(marker)) continue;
+    const now = new Date().toISOString();
+    const put = (p, d) => { writes.push([p, d]); docs = new Map(docs); docs.set(p, d); };
+    const cp = 'gmx/' + board + '/creatures/', ep = 'gmx/' + board + '/combats/', sp = 'gmx/' + board + '/sessions/';
+    const cardP = board === 'main' ? 'cards/' : path + '/cards/', gmP = board === 'main' ? 'gm/' : 'gmx/' + board + '/gm/';
+    const direct = prefix => [...docs].filter(([p]) => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'));
+    // --- creatures
+    let discordId = null;
+    for (const [p, d0] of direct(cp)) {
+      if (!d0 || d0.family !== 'Hushed') continue;
+      const d = JSON.parse(JSON.stringify(d0)), t = norm(d.title);
+      const kind = (t.match(/^hushed (drone|staccato|presto|bass|crescendo|conductor|dissonance|discord)$/) || [])[1];
+      if (!kind) continue;
+      if (kind === 'dissonance' || kind === 'discord') {
+        discordId = p.slice(cp.length);
+        Object.assign(d, { title: HUSHED_DISCORD.title, role: HUSHED_DISCORD.role, sb: HUSHED_DISCORD.sb() });
+      } else {
+        const sb = d.sb || (d.sb = {});
+        const dc = kind === 'crescendo' ? 14 : 14;
+        const [dice, avg] = HUSHED_PULSE[kind];
+        if (!/Psychic Death Pulse/.test(sb.tr || '')) {
+          const lines = String(sb.tr || '').split('\n').filter(l => l.trim());
+          const k = lines.findIndex(l => /^No Self-Preservation\./.test(l));
+          lines.splice(k >= 0 ? k + 1 : lines.length, 0, hushedPulseLine(dice, avg, dc));
+          sb.tr = lines.join('\n');
+        }
+        if (kind === 'bass' && !/Resonant Expansion/.test(sb.b || '')) sb.b = [String(sb.b || '').trim(), HUSHED_BASS_EXPANSION].filter(Boolean).join('\n');
+        if (kind === 'bass') d.role = String(d.role || '').replace(/^Defensive foundation of a Composition\./, 'Defensive foundation of a Composition, and now an enlarging bruiser: Resonant Expansion lets it grow Large by burning through its own body.');
+        if (kind === 'crescendo') d.role = inn(d.role);
+      }
+      let lore = String(d.lore || '');
+      const oldRoster = lore.indexOf('\n### The seven variants');
+      if (oldRoster >= 0) { const end = lore.indexOf('Seven variants quietly reinforce the manufactured Seven Stars structure.', oldRoster); lore = lore.slice(0, oldRoster) + (end >= 0 ? lore.slice(end + 'Seven variants quietly reinforce the manufactured Seven Stars structure.'.length) : ''); }
+      if (!lore.includes('### Psychic Death Pulse')) lore = lore.trimEnd() + '\n' + HUSHED_LORE_V2 + '\n\nSeven variants quietly reinforce the manufactured Seven Stars structure.';
+      d.lore = lore; d.updated = now;
+      put(p, d);
+    }
+    // --- encounters: Dissonance rows become Discord; the first attack is at the PCs' house
+    for (const [p, c0] of direct(ep)) {
+      if (!c0) continue;
+      const c = JSON.parse(JSON.stringify(c0)); let changed = false;
+      for (const m of c.monsters || []) if (/^hushed (dissonance)$/i.test(String(m.name || '').trim())) { Object.assign(m, { name: 'Hushed Discord', cr: '2', ac: 12, hp: 45 }, discordId ? { srd: 'hb-' + discordId } : {}); changed = true; }
+      if (c.run && Array.isArray(c.run.list)) for (const x of c.run.list) if (/^Hushed Dissonance/i.test(x.name || '')) { x.name = x.name.replace(/Dissonance/i, 'Discord'); changed = true; }
+      if (p === ep + 'stormhollow-tavern-composition' || norm(c.title) === 'stormhollow tavern composition') {
+        c.title = 'Stormhollow House Composition'; c.where = 'The house provided to the PCs in Stormhollow';
+        const tac = String(c.tactics || '').replace(/reach the tavern/gi, 'reach the PCs\' house');
+        c.tactics = tac.includes(HUSHED_HOUSE_NOTE) ? tac : HUSHED_HOUSE_NOTE + '\n\n' + tac;
+        changed = true;
+      }
+      if (changed) put(p, c);
+    }
+    // --- Session 1: record where it happened
+    for (const [p, s0] of direct(sp)) {
+      if (!s0 || Number(s0.num) !== 1) continue;
+      const s = { ...s0 };
+      s.notes = inn(s.notes).replace(/SCENE 5 — TAVERN ASSAULT(?! \()/, 'SCENE 5 — TAVERN ASSAULT (played at the PCs\' house in Stormhollow instead of The Broken Lantern)');
+      s.secrets = inn(s.secrets);
+      if (!String(s.recap || '').includes(HUSHED_HOUSE_NOTE)) s.recap = [String(s.recap || '').trim(), HUSHED_HOUSE_NOTE].filter(Boolean).join('\n\n');
+      put(p, s);
+    }
+    // --- storyboard: the "Attack on the Inn" scene and GM notes that mention the inn attack
+    for (const [p, c0] of direct(cardP)) {
+      if (!c0 || c0.kind !== 'scene' || norm(c0.title) !== 'attack on the inn') continue;
+      put(p, { ...c0, title: 'Attack on the House', body: String(c0.body || '').includes(HUSHED_HOUSE_NOTE) ? c0.body : HUSHED_HOUSE_NOTE + '\n\n' + (c0.body || ''), updated: now });
+    }
+    for (const [p, g0] of direct(gmP)) {
+      if (!g0 || !/\binn attack\b/i.test(g0.text || '')) continue;
+      put(p, { ...g0, text: inn(g0.text) });
+    }
+    writes.push([marker, { id: markerName, applied: now }]);
+  }
+  return writes;
+}

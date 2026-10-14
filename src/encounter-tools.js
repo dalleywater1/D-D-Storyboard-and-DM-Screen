@@ -41,7 +41,7 @@ function rollable(html, encId, who) {
   const k = html.indexOf('class="sb-sec'), head = k < 0 ? html : html.slice(0, k), body = k < 0 ? "" : html.slice(k);
   return (head.replace(/save ([+−-]\d+)/g, (_, b) => "save " + btn("d20" + num(b), b, "save")) + body
     .replace(/(Attack Roll:(?:<\/i>)?\s*)([+−-]\d+)/g, (_, a, b) => a + btn("d20" + num(b), b, "attack"))
-    .replace(/(\d+) \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\)/g, (_, avg, e) => `${avg} (${btn(num(e), e, "damage")})`));
+    .replace(/(\d+) \((\d+d\d+(?:\s*[+−-]\s*\d+)?)\)/g, (all, avg, e, at, str) => `${avg} (${btn(num(e), e, /(Failure|Success):[^.]*$/.test(str.slice(Math.max(0, at - 40), at)) ? "effect" : "damage")})`));
 }
 function rollExprFull(expr, mode) {
   const m = String(expr).match(/^(\d*)d(\d+)([+-]\d+)?$/); if (!m) return null;
@@ -78,13 +78,13 @@ Object.assign(ACTIONS, {
   },
   "enc-roll": d => {
     const cfg = S.encDiceCfg[d.id] || {}, what = d.what, who = d.who || "Creature";
-    const r = rollExprFull(d.expr, what === "damage" ? "normal" : cfg.mode); if (!r) return;
+    const r = rollExprFull(d.expr, what === "damage" || what === "effect" ? "normal" : cfg.mode); if (!r) return;
     let note = "";
-    if (what !== "damage" && r.nat === 20) note = what === "attack" ? " · Natural 20: critical hit!" : " · Natural 20";
-    if (what !== "damage" && r.nat === 1) note = what === "attack" ? " · Natural 1: miss" : " · Natural 1";
+    if ((what === "attack" || what === "save") && r.nat === 20) note = what === "attack" ? " · Natural 20: critical hit!" : " · Natural 20";
+    if ((what === "attack" || what === "save") && r.nat === 1) note = what === "attack" ? " · Natural 1: miss" : " · Natural 1";
     let crit = "";
-    if (what === "damage" && r.rolls) { const extra = Array.from({ length: r.n }, () => 1 + Math.floor(Math.random() * r.die)); crit = ` · on a crit ${r.total + extra.reduce((s, x) => s + x, 0)}`; }
-    const label = what === "attack" ? "attack" : what === "save" ? "save" : "damage";
+    if (what === "damage" && r.rolls && d.what !== "effect") { const extra = Array.from({ length: r.n }, () => 1 + Math.floor(Math.random() * r.die)); crit = ` · on a crit ${r.total + extra.reduce((s, x) => s + x, 0)}`; }
+    const label = what === "attack" ? "attack" : what === "save" ? "save" : "damage";  // "effect" is save-based damage: no crit
     logRoll(d.id, { total: r.total, text: `${who} ${label}: ${r.text} = ${r.total}${note}${crit}`, html: `<b>${esc(who)}</b> ${label}: ${esc(r.text)} = <b>${r.total}</b>${esc(note)}${esc(crit)}` });
     toast(`${who} ${label}: ${r.total}${note}${crit}`);
     renderModule();
