@@ -441,3 +441,54 @@ button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent)
 .tc-traits summary { cursor: pointer; font: 600 12px var(--f-mono); letter-spacing: .04em; color: var(--muted); min-height: 28px; display: flex; align-items: center; }
 .tc-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-left: auto; }
 .ctrack .turn-card { margin-left: 0; padding: 8px 10px; font-size: 13px; }
+
+/* ===== Encounter: creature cards bar ===== */
+.mod.list-hidden { grid-template-columns: minmax(0, 1fr); }
+.enc-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); gap: 16px; align-items: start; min-width: 0; }
+.enc-layout.side-shut { grid-template-columns: minmax(0, 1fr) auto; }
+.enc-top { display: flex; justify-content: flex-start; margin: -4px 0 -4px; }
+.enc-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; display: grid; gap: 8px; align-content: start;
+  padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--column); min-width: 0; overscroll-behavior: contain; }
+.enc-side.shut { padding: 6px; background: none; border: 0; }
+.enc-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.enc-side-head h3 { margin: 0; font: 19px var(--f-display); }
+.ec-plan, .ec-party, .ecard { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0; overflow-wrap: anywhere; }
+.ec-plan { padding: 6px 10px; font-size: 13px; }
+.ec-plan summary { cursor: pointer; font: 600 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); min-height: 28px; display: flex; align-items: center; }
+.ec-plan p { margin: 4px 0; }
+.ec-party { padding: 8px 10px; display: grid; gap: 3px; }
+.ec-party h4, .tc-sec h4 { margin: 0 0 2px; font: 600 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ec-pc { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.ec-pc .mono { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.ecard { padding: 0 10px 8px; display: grid; gap: 4px; }
+.ecard.turn { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+.ec-head { display: flex; align-items: center; gap: 8px; width: calc(100% + 20px); margin: 0 -10px; padding: 8px 10px 4px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); min-height: 40px; border-radius: 8px 8px 0 0; }
+.ec-head:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ec-name { flex: 1; min-width: 0; font: 17px/1.15 var(--f-display); color: var(--accent); display: flex; align-items: center; gap: 6px; }
+.ec-n { font: 600 12px var(--f-mono); color: var(--ink); }
+.ec-cr { font-size: 11px; color: var(--muted); }
+.ec-chev { color: var(--muted); font-size: 12px; }
+.ec-facts { font-size: 13px; color: var(--ink); }
+.ec-abil { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; font: 12px var(--f-mono); text-align: center; color: var(--ink); }
+.ec-abil i { display: block; font-style: normal; font-size: 10px; color: var(--muted); }
+.ec-copies { display: flex; flex-wrap: wrap; gap: 4px; }
+.ec-copy { font: 12px var(--f-mono); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; background: var(--bg); }
+.ec-copy.act { border-color: var(--accent); color: var(--accent); }
+.ec-copy.down { opacity: .45; text-decoration: line-through; }
+.ec-copy i { font-style: normal; color: var(--warn); }
+.ec-body { font-size: 13px; display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 6px; margin: 2px 0 0; }
+.ec-props { color: var(--muted); }
+.ec-props b { color: var(--ink); font-weight: 600; }
+.ec-body .sb-entry { margin: 2px 0; }
+.ec-links { display: flex; justify-content: flex-end; }
+@media (max-width: 1150px) {
+  .enc-layout, .enc-layout.side-shut { grid-template-columns: minmax(0, 1fr); }
+  .enc-side { position: static; max-height: none; }
+  .enc-side.shut { justify-self: start; }
+}
+.ec-group { margin: 4px 0 -2px; font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ecard.pc .ec-name { color: var(--played); }
+.ecard.down { opacity: .55; }
+.ec-pcgrid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.ec-pcgrid .mf input { padding: 5px 6px; }
+.ec-note { font-size: 12px; color: var(--muted); }

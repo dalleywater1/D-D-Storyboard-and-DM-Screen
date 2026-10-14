@@ -528,14 +528,16 @@ function renderCombats() {
     const st = encStats(c);
     return { id: c.id, title: c.title || "Untitled encounter", sub: st.total ? `${st.label} · ${fmtN(st.total)} XP` : st.label, badge: c.run ? pill("Running", "warn") : c.status === "done" ? pill("Fought", "played") : "" };
   });
-  return `<div class="mod">${listPane({ mod: "combats", title: "Combats", items, sel: id, newDo: "new-combat", newLabel: "+ Encounter", empty: "No encounters yet." })}
-    ${id ? combatDetail(S.mod.combats.get(id)) : emptyDetail("Build an encounter", "Add monsters and see how hard the fight is for your party using the 2024 XP budgets, then run it with the initiative tracker.", "new-combat", "+ Build an encounter")}</div>`;
+  const wide = id && typeof encSide === "function";
+  return `<div class="mod${wide && S.combatListHidden ? " list-hidden" : ""}">${wide && S.combatListHidden ? "" : listPane({ mod: "combats", title: "Combats", items, sel: id, newDo: "new-combat", newLabel: "+ Encounter", empty: "No encounters yet." })}
+    ${id ? (wide ? `<div class="enc-layout${S.encSideOpen ? "" : " side-shut"}">${combatDetail(S.mod.combats.get(id))}${encSide(S.mod.combats.get(id))}</div>` : combatDetail(S.mod.combats.get(id))) : emptyDetail("Build an encounter", "Add monsters and see how hard the fight is for your party using the 2024 XP budgets, then run it with the initiative tracker.", "new-combat", "+ Build an encounter")}</div>`;
 }
 function combatDetail(c) {
   const m = "combats", i = c.id, st = encStats(c), mons = c.monsters || [];
   const scale = Math.max(st.b[2] * 1.25, st.total, 1);
   const pos = v => clamp(v / scale * 100, 0, 100).toFixed(1);
   return `<section class="mdetail" aria-label="Encounter">
+    ${typeof combatListToggle === "function" ? `<div class="enc-top">${combatListToggle()}</div>` : ""}
     <div class="mgrid">
       ${fInput(m, i, "title", "Encounter", { wide: true, cls: "big", ph: "Ambush at the Fifth Landing" })}
       ${fInput(m, i, "where", "Where", { ph: "The Sunken Library" })}
