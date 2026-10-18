@@ -86,8 +86,10 @@ function morphChildren(from, to) {
   while (from.childNodes.length > want.length) from.removeChild(from.lastChild);
 }
 function morphEl(from, to) {
-  for (const a of [...from.attributes]) if (!to.hasAttribute(a.name) && !(a.name === "style" && from.tagName === "TEXTAREA")) from.removeAttribute(a.name);
-  for (const a of [...to.attributes]) if (from.getAttribute(a.name) !== a.value) from.setAttribute(a.name, a.value);
+  // a fold-out (<details>) keeps the open/closed state the person left it in
+  const keepOpen = from.tagName === "DETAILS";
+  for (const a of [...from.attributes]) if (!to.hasAttribute(a.name) && !(a.name === "style" && from.tagName === "TEXTAREA") && !(keepOpen && a.name === "open")) from.removeAttribute(a.name);
+  for (const a of [...to.attributes]) if (from.getAttribute(a.name) !== a.value && !(keepOpen && a.name === "open")) from.setAttribute(a.name, a.value);
   const focused = from === document.activeElement;
   if (from.tagName === "TEXTAREA") { if (!focused && from.value !== to.value) from.value = to.value; return; }
   if (from.tagName === "INPUT") {

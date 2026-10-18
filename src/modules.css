@@ -492,3 +492,78 @@ button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent)
 .ec-pcgrid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
 .ec-pcgrid .mf input { padding: 5px 6px; }
 .ec-note { font-size: 12px; color: var(--muted); }
+
+/* ===== Historical Timeline ===== */
+.tl-mod { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); gap: 16px; align-items: start; }
+.tl-mod.no-detail { grid-template-columns: minmax(0, 1fr); }
+.tl-main { display: grid; gap: 12px; min-width: 0; }
+.tl-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+.tl-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.tl-bar-l, .tl-bar-r { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tl-bar h2 { margin: 0 6px 0 0; font: 26px var(--f-display); }
+.tl-bar input[type=search] { min-width: 200px; border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; background: var(--surface); color: var(--ink); font: 14px var(--f-body); }
+.tl-bar select { border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px; background: var(--surface); color: var(--ink); font: 14px var(--f-body); }
+.tl-bar .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.tl-bar .seg button { border: 0; background: var(--surface); color: var(--muted); font: 600 13px var(--f-body); padding: 7px 12px; cursor: pointer; min-height: 36px; }
+.tl-bar .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.tl-settings { border: 1px solid var(--line); border-radius: 8px; padding: 4px 12px; background: var(--surface); font-size: 14px; }
+.tl-settings summary { cursor: pointer; font: 600 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); min-height: 32px; display: flex; align-items: center; }
+.tl-settings .mgrid { margin: 4px 0; }
+/* overview strip */
+.tl-over { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 6px; }
+.tl-track { position: relative; height: 64px; }
+.tl-track::before { content: ""; position: absolute; left: 0; right: 0; top: 40px; height: 2px; background: var(--line); }
+.tl-band { position: absolute; top: 4px; height: 26px; border: 0; border-radius: 5px; background: color-mix(in srgb, var(--bc) 22%, transparent); border-bottom: 3px solid var(--bc); cursor: pointer; overflow: hidden; padding: 0 6px; text-align: left; color: var(--ink); font: 600 11px var(--f-body); white-space: nowrap; text-overflow: ellipsis; }
+.tl-band span { overflow: hidden; text-overflow: ellipsis; display: block; line-height: 23px; }
+.tl-tick { position: absolute; top: 34px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; border: 2px solid var(--surface); background: var(--tc); cursor: pointer; padding: 0; box-shadow: 0 0 0 1px var(--tc); }
+.tl-tick.major { width: 16px; height: 16px; margin-left: -8px; top: 32px; }
+.tl-tick.sel { box-shadow: 0 0 0 3px var(--accent); }
+.tl-now { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--accent); }
+.tl-now span { position: absolute; bottom: -2px; left: 4px; font: 600 10px var(--f-mono); color: var(--accent); white-space: nowrap; }
+.tl-scale { display: flex; justify-content: space-between; font: 11px var(--f-mono); color: var(--muted); }
+/* vertical list */
+.tl-list { position: relative; display: grid; gap: 10px; padding: 4px 0 20px; }
+.tl-list::before { content: ""; position: absolute; top: 0; bottom: 0; left: 132px; width: 2px; background: var(--line); }
+.tl-ev { position: relative; display: grid; grid-template-columns: 120px 24px minmax(0, 1fr); align-items: start; }
+.tl-when { text-align: right; padding: 12px 8px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.tl-ev.major .tl-when { color: var(--ink); font-weight: 600; }
+.tl-dot { justify-self: center; margin-top: 13px; width: 14px; height: 14px; border-radius: 50%; background: var(--tc); border: 3px solid var(--bg); box-shadow: 0 0 0 1px var(--tc); z-index: 1; }
+.tl-ev.major .tl-dot { width: 20px; height: 20px; margin-top: 10px; }
+.tl-card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--tc); border-radius: 8px; padding: 0 12px 10px; min-width: 0; overflow-wrap: anywhere; box-shadow: var(--shadow); }
+.tl-ev.sel .tl-card { border-color: var(--accent); border-left-color: var(--tc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+.tl-ev.secret .tl-card { background: repeating-linear-gradient(135deg, var(--surface), var(--surface) 10px, color-mix(in srgb, var(--c-violet) 5%, var(--surface)) 10px, color-mix(in srgb, var(--c-violet) 5%, var(--surface)) 20px); }
+.tl-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; width: calc(100% + 24px); margin: 0 -12px; padding: 10px 12px 4px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); border-radius: 8px 8px 0 0; }
+.tl-head:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.tl-title { font: 19px/1.2 var(--f-display); flex: 1 1 auto; min-width: 0; }
+.tl-ev.major .tl-title { font-size: 23px; }
+.tl-cat { font: 600 10px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--tc); border: 1px solid currentColor; border-radius: 4px; padding: 1px 5px; }
+.tl-secret { font: 600 10px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--c-violet); }
+.tl-told p, .tl-truth p { margin: 4px 0; }
+.tl-told { font-size: 14px; }
+.tl-truth { margin-top: 6px; padding: 6px 10px; border-radius: 6px; background: var(--gm-bg, color-mix(in srgb, var(--c-amber) 10%, var(--surface))); border: 1px dashed color-mix(in srgb, var(--c-amber) 50%, var(--line)); font-size: 14px; }
+.tl-truth b { font: 600 10px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tl-cards { margin-top: 8px; }
+.tl-era { display: flex; align-items: baseline; gap: 12px; margin: 10px 0 2px 120px; padding: 8px 14px; border: 0; border-left: 6px solid var(--bc); border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--bc) 14%, var(--surface)); cursor: pointer; text-align: left; color: var(--ink); position: relative; z-index: 1; }
+.tl-era[aria-current="true"] { box-shadow: 0 0 0 2px var(--accent); }
+.tl-era-name { font: 24px var(--f-display); }
+.tl-era-range { font-size: 12px; color: var(--muted); }
+.tl-gap { margin-left: 120px; padding: 2px 0 2px 26px; font: italic 13px var(--f-display); color: var(--muted); }
+.tl-nowline { margin-left: 120px; border-top: 2px dashed var(--accent); position: relative; height: 0; margin-top: 8px; margin-bottom: 8px; }
+.tl-nowline span { position: absolute; top: -10px; left: 20px; background: var(--bg); padding: 0 6px; font: 600 11px var(--f-mono); color: var(--accent); }
+.tl-none { margin: 12px 0; }
+.tl-detail .tl-flags { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.tl-detail .chk { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.tl-sw::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--nn); margin-right: 6px; vertical-align: -1px; }
+@media (max-width: 1100px) { .tl-mod { grid-template-columns: minmax(0, 1fr); } .tl-side { position: static; max-height: none; order: -1; } }
+@media (max-width: 620px) {
+  .tl-list::before { left: 11px; }
+  .tl-ev { grid-template-columns: 24px minmax(0, 1fr); }
+  .tl-when { grid-column: 2; text-align: left; padding: 0 0 2px; order: -1; }
+  .tl-dot { grid-row: 1 / span 2; grid-column: 1; }
+  .tl-card { grid-column: 2; }
+  .tl-era, .tl-gap, .tl-nowline { margin-left: 24px; }
+}
+.tl-over { overflow: hidden; }
+.tl-now.flip span { left: auto; right: 4px; }
+.tl-era-end { margin: 2px 0 2px 120px; padding: 2px 14px; border-left: 6px solid var(--bc); font: italic 13px var(--f-display); color: var(--muted); }
+@media (max-width: 620px) { .tl-era-end { margin-left: 24px; } }
