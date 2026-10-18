@@ -65,6 +65,7 @@
         if (typeof hushedCompositionDissonanceUpdate === "function") update.writes.push(...hushedCompositionDissonanceUpdate(new Map([...store, ...update.writes])));
         if (typeof hushedRevisionUpdate === "function") update.writes.push(...hushedRevisionUpdate(new Map([...store, ...update.writes])));
         if (typeof fallenSession1Update === "function") update.writes.push(...fallenSession1Update(new Map([...store, ...update.writes])));
+        if (typeof fallenHarmonyUpdate === "function") update.writes.push(...fallenHarmonyUpdate(new Map([...store, ...update.writes])));
         if (update.writes.length) {
           await write("docs", s => { for (const [k, v] of update.writes) s.put(v, k); });
           for (const [k, v] of update.writes) store.set(k, v);

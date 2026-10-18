@@ -58,7 +58,7 @@ function renderTimeline() {
     ? `<div class="mempty-detail"><h2>Your world's history</h2><p>Add events (a founding, a war, a betrayal) and eras that span centuries. For each event, write what people believe and what really happened, and link the storyboard cards involved.</p>
         ${S.canWrite ? `<div class="actions"><button type="button" class="btn primary" data-do="tl-new-event">+ First event</button><button type="button" class="btn" data-do="tl-new-era">+ An era</button></div>` : ""}</div>`
     : `${tlOverview(all.filter(e => !(players && e.hidden)), eras, set, sel)}${tlList(shown, eras, sel, players, all.length)}`;
-  const detail = !selDoc ? "" : selDoc.type === "era" ? tlEraDetail(selDoc) : tlEventDetail(selDoc, eras);
+  const detail = players || !selDoc ? "" : selDoc.type === "era" ? tlEraDetail(selDoc) : tlEventDetail(selDoc, eras);
   return `<div class="tl-mod${detail ? "" : " no-detail"}"><div class="tl-main">${bar}${settings}${body}</div>${detail ? `<div class="tl-side">${detail}</div>` : ""}</div>`;
 }
 function tlOverview(events, eras, set, sel) {
