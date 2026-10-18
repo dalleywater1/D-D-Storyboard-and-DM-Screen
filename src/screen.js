@@ -92,13 +92,43 @@ function spellPanel() {
       <div>${esc(s.x)}</div></div>`).join("") : `<p class="hint" style="padding:16px 0">No spell matches. Try a shorter word.</p>`}</div>
     <p class="foot-note">Quick summaries of common spells. Check the full spell text for edge cases and upcasting.</p>`;
 }
-function guildPanel() {
-  const m = "screen", i = "guild";
-  const favor = int(val(m, i, "favor", 0)), track = val(m, i, "track", "") || "Favor";
-  const traps = Array.from({ length: 8 }, (_, n) => n);
-  return `<div class="ptitle">${fInput(m, i, "title", null, { aria: "Tracker title", ph: "Your party or guild" })}</div>
-    <div class="msec"><h3>The party</h3><div class="mtable-wrap"><table class="mt"><thead><tr><th>Player</th><th>Character</th><th>Class</th><th class="num">Lvl</th><th class="num">AC</th><th class="num">HP</th><th class="num">PP</th></tr></thead><tbody>
-      ${Array.from({ length: 6 }, (_, r) => `<tr>
+/* ----- Guild tracker: a pane of sections you can add, remove, rename and reorder.
+   Stored in screen/guild: secs = [{id, kind, legacy?}] in order, sd.<id> = each
+   section's own data. Older trackers (no secs yet) get the default list, which
+   reads the original fields (party, adventure, traps, artifacts, notes), so
+   nothing filled in before is lost. ----- */
+const XP_LEVELS = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+const xpLevel = xp => { let l = 1; while (l < 20 && xp >= XP_LEVELS[l]) l++; return l; };
+const G_KINDS = [
+  { kind: "party", title: "The party", blurb: "Players, characters, class, level, AC, HP. Combats uses it.", one: true },
+  { kind: "xp", title: "Experience", blurb: "XP each character has earned, with a log of awards and the next level.", one: true },
+  { kind: "adventure", title: "Current adventure", blurb: "Adventure, goal, and a favour track with what pleases and angers.", one: true },
+  { kind: "checklist", title: "Checklist", blurb: "Objectives, clues, quests or traps to tick off." },
+  { kind: "track", title: "Track", blurb: "A row of pips: reputation, alarm, a countdown." },
+  { kind: "counters", title: "Counters", blurb: "Named numbers with − and +: gold, renown, rations." },
+  { kind: "notes", title: "Notes", blurb: "A free-text box." },
+];
+const G_TITLES = { traps: "The eight traps", artifacts: "Recovered artifacts", notes: "Session notes" };
+S.guildEdit = false; S.guildAdd = false;
+const gDoc = () => S.mod.screen.get("guild") || {};
+function guildSecs() {
+  const g = gDoc(); if (Array.isArray(g.secs)) return g.secs;
+  const trapData = (g.traps || []).some(t => t && (t.name || t.desc || t.done));
+  return [{ id: "party", kind: "party" }, { id: "xp", kind: "xp" }, { id: "adventure", kind: "adventure" },
+    trapData ? { id: "traps", kind: "checklist", legacy: "traps" } : { id: "objectives", kind: "checklist" },
+    { id: "artifacts", kind: "notes", legacy: "artifacts" }, { id: "notes", kind: "notes", legacy: "notes" }];
+}
+const gTitle = sec => val("screen", "guild", `sd.${sec.id}.title`, "") || G_TITLES[sec.legacy] || (sec.id === "objectives" ? "Objectives" : G_KINDS.find(k => k.kind === sec.kind)?.title || "Section");
+const gArr = x => Array.isArray(x) ? x : x && typeof x === "object" ? Object.keys(x).filter(k => /^\d+$/.test(k)).reduce((a, k) => (a[k] = x[k], a), []) : [];
+const gItemsPath = sec => sec.legacy && sec.kind === "checklist" ? sec.legacy : `sd.${sec.id}.items`;
+const gTextPath = sec => sec.legacy && sec.kind === "notes" ? sec.legacy : `sd.${sec.id}.text`;
+function gSaveSecs(secs) { const g = docCopy("screen", "guild"); g.secs = secs; putDoc("screen", "guild", g); }
+const paneName = () => (gDoc().paneName || "").trim() || "Guild Tracker";
+
+function gParty(sec) {
+  const m = "screen", i = "guild", rows = clamp(int(val(m, i, "partyRows", 6)) || 6, 1, 10);
+  return `<div class="mtable-wrap"><table class="mt"><thead><tr><th>Player</th><th>Character</th><th>Class</th><th class="num">Lvl</th><th class="num">AC</th><th class="num">HP</th><th class="num">PP</th></tr></thead><tbody>
+      ${Array.from({ length: rows }, (_, r) => `<tr>
         <td>${fInput(m, i, `party.${r}.player`, null, { aria: `Player ${r + 1}` })}</td>
         <td>${fInput(m, i, `party.${r}.char`, null, { aria: `Character ${r + 1}` })}</td>
         <td>${fInput(m, i, `party.${r}.cls`, null, { aria: `Class ${r + 1}` })}</td>
@@ -106,20 +136,158 @@ function guildPanel() {
         <td class="num" style="width:52px">${fInput(m, i, `party.${r}.ac`, null, { type: "number", aria: `AC ${r + 1}` })}</td>
         <td class="num" style="width:60px">${fInput(m, i, `party.${r}.hp`, null, { type: "number", aria: `HP ${r + 1}` })}</td>
         <td class="num" style="width:52px">${fInput(m, i, `party.${r}.pp`, null, { type: "number", aria: `Passive Perception ${r + 1}` })}</td></tr>`).join("")}
-    </tbody></table></div><p class="hint">PP = passive Perception. The Combats tab uses this party for budgets and initiative.</p></div>
-    <div class="adv-box">
+    </tbody></table></div><p class="hint">PP = passive Perception. Combats and the encounter cards use this party.</p>`;
+}
+function gXp(sec) {
+  const m = "screen", i = "guild", d = gDoc().sd?.[sec.id] || {}, log = d.log || [];
+  const xp = int(d.start) + log.reduce((a, x) => a + int(x.amt), 0), lvl = xpLevel(xp);
+  const next = lvl < 20 ? XP_LEVELS[lvl] : null, from = XP_LEVELS[lvl - 1];
+  const pct = next ? Math.round(100 * (xp - from) / (next - from)) : 100;
+  const party = guildParty(), size = party.length;
+  const lvls = party.map(p => int(p.lvl)).filter(Boolean), low = lvls.length ? Math.min(...lvls) : 0;
+  const combats = sortedCombats().filter(c => encStats(c).total);
+  return `<div class="g-xp">
+      <div class="g-xp-head"><span class="g-xp-num">${fmtN(xp)}</span><span>XP each</span>${pill("Level " + lvl, "muted")}${low && lvl > low ? pill(`Level up: ${low} → ${lvl}`, "good") : ""}</div>
+      <div class="g-bar" role="progressbar" aria-label="Progress to level ${next ? lvl + 1 : 20}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div>
+      <p class="hint" style="margin:0">${next ? `${fmtN(next - xp)} XP to level ${lvl + 1} (${fmtN(next)}).` : "Level 20: the top of the table."}</p>
+      ${S.canWrite ? `<div class="add-row g-award">
+        <input id="g-xp-amt-${sec.id}" class="short" type="number" min="0" placeholder="XP" aria-label="XP to award">
+        <select id="g-xp-how-${sec.id}" aria-label="How the XP is given"><option value="each">each</option><option value="split">split ${size || "?"} ways</option></select>
+        <input id="g-xp-note-${sec.id}" placeholder="For what: defeated the Hushed" aria-label="What the XP is for">
+        <button type="button" class="btn primary" data-do="g-xp-add" data-sec="${sec.id}">Award</button></div>
+        ${combats.length ? `<label class="mf"><span>Or from an encounter</span><select data-change="g-xp-enc" data-sec="${sec.id}" aria-label="Fill in the XP from an encounter"><option value="">Choose an encounter…</option>${combats.map(c => `<option value="${esc(c.id)}">${esc(c.title || "Untitled encounter")} · ${fmtN(encStats(c).total)} XP</option>`).join("")}</select></label>` : ""}` : ""}
+      ${log.length ? `<ul class="g-log">${log.map((x, n) => ({ x, n })).reverse().map(({ x, n }) => `<li><b>+${fmtN(int(x.amt))}</b><span>${esc(x.note || "XP")}</span>${x.split ? `<span class="hint">${fmtN(x.split)} split ${x.ways} ways</span>` : ""}${S.canWrite ? `<button type="button" class="icon-btn" data-do="g-xp-del" data-sec="${sec.id}" data-n="${n}" aria-label="Remove this award">×</button>` : ""}</li>`).join("")}</ul>` : `<p class="hint" style="margin:0">No XP awarded yet.</p>`}
+      ${S.guildEdit ? `<div class="mgrid">${fInput(m, i, `sd.${sec.id}.start`, "Starting XP", { type: "number", min: 0, ph: "0", hint: "before the log" })}</div>` : ""}
+    </div>`;
+}
+function gAdventure() {
+  const m = "screen", i = "guild", favor = int(val(m, i, "favor", 0)), track = val(m, i, "track", "") || "Favor";
+  return `<div class="adv-box">
       <div class="mgrid">${fInput(m, i, "adventure", "Current adventure", { ph: "The Sunken Library", wide: true })}${fInput(m, i, "goal", "Goal", { ph: "Find the lost key before the tide turns", wide: true })}</div>
       <div class="row-between"><div class="mgrid" style="flex:1">${fInput(m, i, "track", "Track", { ph: "Favour with the Duke" })}</div>
         <div class="favor" role="group" aria-label="${esc(track)}: ${favor} of 10">${Array.from({ length: 10 }, (_, k) => `<button type="button" data-do="favor" data-n="${k + 1}" aria-pressed="${k < favor}" aria-label="${esc(track)} ${k + 1} of 10"></button>`).join("")}</div></div>
-      <div class="mgrid">${fArea(m, i, "pleases", "Pleases", { rows: 2 })}${fArea(m, i, "angers", "Angers", { rows: 2 })}</div>
-    </div>
-    <div class="msec"><h3>The eight traps</h3>${traps.map(n => `<div class="trap ${val(m, i, `traps.${n}.done`, false) ? "done" : ""}">
-      ${fCheck(m, i, `traps.${n}.done`, `Trap ${n + 1} cleared`)}
-      ${fInput(m, i, `traps.${n}.name`, null, { aria: `Trap ${n + 1} name`, ph: `${n + 1} ·`, cls: "tname" })}
-      ${fInput(m, i, `traps.${n}.desc`, null, { aria: `Trap ${n + 1} notes`, ph: "Notes", cls: "tdesc" })}</div>`).join("")}</div>
-    ${fArea(m, i, "artifacts", "Recovered artifacts", { rows: 3 })}
-    ${fArea(m, i, "notes", "Session notes", { rows: 4 })}`;
+      <div class="mgrid">${fArea(m, i, "pleases", "Pleases", { rows: 2 })}${fArea(m, i, "angers", "Angers", { rows: 2 })}</div></div>`;
 }
+function gChecklist(sec) {
+  const m = "screen", i = "guild", ip = gItemsPath(sec), items = gArr(getPath(gDoc(), ip)), t = gTitle(sec);
+  return `${items.map((_, n) => `<div class="trap g-row ${val(m, i, `${ip}.${n}.done`, false) ? "done" : ""}">
+      ${fCheck(m, i, `${ip}.${n}.done`, `${t} ${n + 1} done`)}
+      ${fInput(m, i, `${ip}.${n}.name`, null, { aria: `${t} ${n + 1}`, ph: `${n + 1} ·`, cls: "tname" })}
+      ${S.canWrite ? `<button type="button" class="icon-btn g-x" data-do="g-item-del" data-sec="${sec.id}" data-n="${n}" aria-label="Remove ${esc(t)} ${n + 1}">×</button>` : ""}
+      ${fInput(m, i, `${ip}.${n}.desc`, null, { aria: `${t} ${n + 1} notes`, ph: "Notes", cls: "tdesc" })}</div>`).join("")}
+    ${!items.length ? `<p class="hint" style="margin:0">Nothing on the list yet.</p>` : ""}
+    ${S.canWrite ? `<div><button type="button" class="btn small" data-do="g-item-add" data-sec="${sec.id}">+ Add</button></div>` : ""}`;
+}
+function gTrack(sec) {
+  const m = "screen", i = "guild", d = gDoc().sd?.[sec.id] || {}, max = clamp(int(d.max) || 10, 2, 30), n = clamp(int(d.n), 0, max), t = gTitle(sec);
+  return `<div class="row-between"><div class="favor" role="group" aria-label="${esc(t)}: ${n} of ${max}">${Array.from({ length: max }, (_, k) => `<button type="button" data-do="g-pip" data-sec="${sec.id}" data-n="${k + 1}" aria-pressed="${k < n}" aria-label="${esc(t)} ${k + 1} of ${max}"></button>`).join("")}</div><span class="mono hint">${n} / ${max}</span></div>
+    ${S.guildEdit ? `<div class="mgrid">${fInput(m, i, `sd.${sec.id}.max`, "Pips", { type: "number", min: 2, max: 30, ph: "10" })}</div>` : ""}
+    <div class="mgrid">${fArea(m, i, `sd.${sec.id}.up`, "Raises it", { rows: 2 })}${fArea(m, i, `sd.${sec.id}.down`, "Lowers it", { rows: 2 })}</div>`;
+}
+function gCounters(sec) {
+  const m = "screen", i = "guild", ip = gItemsPath(sec), items = gArr(getPath(gDoc(), ip)), t = gTitle(sec);
+  return `${items.length ? `<div class="g-counters">${items.map((it, n) => `<div class="g-counter">
+      ${fInput(m, i, `${ip}.${n}.name`, null, { aria: `${t}: name ${n + 1}`, ph: "Gold", cls: "g-cname" })}
+      ${S.canWrite ? `<button type="button" class="btn small" data-do="g-count" data-sec="${sec.id}" data-n="${n}" data-d="-1" aria-label="One less">−</button>` : ""}
+      ${fInput(m, i, `${ip}.${n}.n`, null, { type: "number", aria: `${it?.name || "Counter " + (n + 1)} amount`, ph: "0", cls: "g-cnum" })}
+      ${S.canWrite ? `<button type="button" class="btn small" data-do="g-count" data-sec="${sec.id}" data-n="${n}" data-d="1" aria-label="One more">+</button>
+      <button type="button" class="icon-btn" data-do="g-item-del" data-sec="${sec.id}" data-n="${n}" aria-label="Remove ${esc(it?.name || "counter")}">×</button>` : ""}</div>`).join("")}</div>` : `<p class="hint" style="margin:0">No counters yet.</p>`}
+    ${S.canWrite ? `<div><button type="button" class="btn small" data-do="g-item-add" data-sec="${sec.id}">+ Add counter</button></div>` : ""}`;
+}
+function gNotes(sec) { return fArea("screen", "guild", gTextPath(sec), null, { rows: sec.legacy === "artifacts" ? 3 : 4, aria: gTitle(sec) }); }
+const G_RENDER = { party: gParty, xp: gXp, adventure: gAdventure, checklist: gChecklist, track: gTrack, counters: gCounters, notes: gNotes };
+
+function guildPanel() {
+  const m = "screen", i = "guild", secs = guildSecs(), ed = S.guildEdit && S.canWrite;
+  const have = new Set(secs.map(s => s.kind));
+  return `<div class="ptitle">${fInput(m, i, "title", null, { aria: "Tracker title", ph: "Your party or guild" })}</div>
+    ${S.canWrite ? `<div class="g-tools">${ed ? `<button type="button" class="btn small" data-do="g-add-open" aria-expanded="${S.guildAdd}">+ Add section</button>` : ""}<button type="button" class="btn ${ed ? "primary" : "ghost"} small" data-do="g-edit" aria-pressed="${ed}">${ed ? "Done" : "Edit sections"}</button></div>` : ""}
+    ${ed ? `<div class="g-edit-box"><div class="mgrid">${fInput(m, i, "paneName", "Pane name", { ph: "Guild Tracker", hint: "on the panels bar" })}${have.has("party") ? fSelect(m, i, "partyRows", "Party rows", [4, 5, 6, 7, 8, 9, 10].map(n => [n]), { dflt: "6" }) : ""}</div>
+      ${S.guildAdd ? `<div class="panel-chooser g-chooser">${G_KINDS.map(k => { const off = k.one && have.has(k.kind);
+        return `<button type="button" class="panel-choice" data-do="g-add" data-kind="${k.kind}" ${off ? "disabled" : ""}><b>${k.title}</b><span>${off ? "Already in the pane." : k.blurb}</span></button>`; }).join("")}</div>` : ""}</div>` : ""}
+    ${secs.map((sec, n) => `<div class="msec g-sec" id="gsec-${esc(sec.id)}">
+      <div class="g-sec-head">${ed ? fInput(m, i, `sd.${sec.id}.title`, null, { aria: "Section title", ph: gTitle(sec), cls: "g-title-in" }) : `<h3>${esc(gTitle(sec))}</h3>`}
+        ${ed ? `<span class="g-sec-ctl">
+          <button type="button" class="icon-btn" data-do="g-move" data-sec="${esc(sec.id)}" data-dir="-1" ${n === 0 ? "disabled" : ""} aria-label="Move ${esc(gTitle(sec))} up">↑</button>
+          <button type="button" class="icon-btn" data-do="g-move" data-sec="${esc(sec.id)}" data-dir="1" ${n === secs.length - 1 ? "disabled" : ""} aria-label="Move ${esc(gTitle(sec))} down">↓</button>
+          ${S.confirm === "gsec" + sec.id ? `<span class="confirm">${sec.legacy || G_KINDS.find(k => k.kind === sec.kind)?.one ? "Take it out? What's in it stays saved." : "Remove it and what's in it?"} <button type="button" class="btn danger small" data-do="g-del" data-sec="${esc(sec.id)}">Remove</button><button type="button" class="btn small" data-do="cancel">Keep</button></span>`
+            : `<button type="button" class="icon-btn" data-do="ask" data-key="gsec${esc(sec.id)}" aria-label="Remove ${esc(gTitle(sec))}">×</button>`}</span>` : ""}</div>
+      ${(G_RENDER[sec.kind] || gNotes)(sec)}</div>`).join("")}
+    ${!secs.length ? `<p class="hint">No sections. Click Edit sections → Add section.</p>` : ""}`;
+}
+/* the pane's name on the panels bar */
+const _allPanelsG = allPanels;
+allPanels = function () { return _allPanelsG().map(p => p.id === "guild" ? { ...p, title: paneName() } : p); };
+function gSec(id) { return guildSecs().find(s => s.id === id); }
+Object.assign(ACTIONS, {
+  "g-edit": () => { S.guildEdit = !S.guildEdit; S.guildAdd = false; S.confirm = null; render(); },
+  "g-add-open": () => { S.guildAdd = !S.guildAdd; render(); },
+  "g-add": d => {
+    const k = G_KINDS.find(x => x.kind === d.kind); if (!k) return;
+    const secs = [...guildSecs()];
+    // the one-off kinds keep a fixed id, so taking one out and back brings its contents back
+    const id = k.one ? d.kind : d.kind + "_" + uid();
+    if (secs.some(s => s.id === id)) return;
+    secs.push(k.kind === "notes" && id === "notes" ? { id, kind: "notes", legacy: "notes" } : { id, kind: k.kind });
+    S.guildAdd = false; gSaveSecs(secs); toast(`Added ${k.title}`);
+    setTimeout(() => { const el = document.getElementById("gsec-" + id); el?.scrollIntoView({ block: "nearest", behavior: "smooth" }); el?.querySelector("input")?.focus(); }, 60);
+  },
+  "g-move": d => {
+    const secs = [...guildSecs()], n = secs.findIndex(s => s.id === d.sec), j = n + Number(d.dir);
+    if (n < 0 || j < 0 || j >= secs.length) return;
+    [secs[n], secs[j]] = [secs[j], secs[n]]; gSaveSecs(secs);
+    setTimeout(() => document.querySelector(`#gsec-${CSS.escape(d.sec)} [data-dir="${d.dir}"]`)?.focus(), 30);
+  },
+  "g-del": d => {
+    S.confirm = null;
+    const sec = gSec(d.sec), g = docCopy("screen", "guild");
+    g.secs = guildSecs().filter(s => s.id !== d.sec);
+    const keep = sec && (sec.legacy || G_KINDS.find(k => k.kind === sec.kind)?.one);
+    if (!keep && g.sd) delete g.sd[d.sec];
+    putDoc("screen", "guild", g); toast("Section removed");
+  },
+  "g-item-add": d => {
+    const sec = gSec(d.sec); if (!sec) return;
+    const g = docCopy("screen", "guild"), ip = gItemsPath(sec), items = [...gArr(getPath(g, ip))];
+    items.push(sec.kind === "counters" ? { name: "", n: 0 } : { name: "", desc: "", done: false });
+    setPath(g, ip, items); putDoc("screen", "guild", g);
+    setTimeout(() => { const rows = document.querySelectorAll(`#gsec-${CSS.escape(d.sec)} ${sec.kind === "counters" ? ".g-cname" : ".tname"}`); rows[rows.length - 1]?.focus(); }, 40);
+  },
+  "g-item-del": d => {
+    const sec = gSec(d.sec); if (!sec) return;
+    const g = docCopy("screen", "guild"), ip = gItemsPath(sec), items = [...gArr(getPath(g, ip))];
+    items.splice(Number(d.n), 1); setPath(g, ip, items); putDoc("screen", "guild", g);
+  },
+  "g-count": d => {
+    const sec = gSec(d.sec); if (!sec) return;
+    const p = `${gItemsPath(sec)}.${d.n}.n`;
+    commit("screen", "guild", p, int(val("screen", "guild", p, 0)) + Number(d.d)); render();
+  },
+  "g-pip": d => {
+    const p = `sd.${d.sec}.n`, cur = int(val("screen", "guild", p, 0)), n = Number(d.n);
+    commit("screen", "guild", p, cur === n ? n - 1 : n); render();
+  },
+  "g-xp-add": d => {
+    const amtEl = $(`#g-xp-amt-${d.sec}`), raw = Math.max(0, int(amtEl?.value)); if (!raw) { amtEl?.focus(); return; }
+    const how = $(`#g-xp-how-${d.sec}`)?.value, ways = guildParty().length || 1, note = ($(`#g-xp-note-${d.sec}`)?.value || "").trim();
+    const entry = how === "split" ? { amt: Math.floor(raw / ways), split: raw, ways, note } : { amt: raw, note };
+    entry.date = new Date().toISOString().slice(0, 10);
+    const g = docCopy("screen", "guild"), before = xpLevel(int(g.sd?.[d.sec]?.start) + (g.sd?.[d.sec]?.log || []).reduce((a, x) => a + int(x.amt), 0));
+    setPath(g, `sd.${d.sec}.log`, [...(g.sd?.[d.sec]?.log || []), entry]); putDoc("screen", "guild", g);
+    const after = xpLevel(int(g.sd[d.sec].start) + g.sd[d.sec].log.reduce((a, x) => a + int(x.amt), 0));
+    toast(after > before ? `+${fmtN(entry.amt)} XP each. That's level ${after}!` : `+${fmtN(entry.amt)} XP each`);
+  },
+  "g-xp-del": d => {
+    const g = docCopy("screen", "guild"), log = [...(g.sd?.[d.sec]?.log || [])];
+    log.splice(Number(d.n), 1); setPath(g, `sd.${d.sec}.log`, log); putDoc("screen", "guild", g);
+  },
+});
+CHANGES["g-xp-enc"] = (d, el) => {
+  const c = S.mod.combats.get(el.value); if (!c) return;
+  const amt = $(`#g-xp-amt-${d.sec}`), how = $(`#g-xp-how-${d.sec}`), note = $(`#g-xp-note-${d.sec}`);
+  if (amt) amt.value = encStats(c).total; if (how) how.value = "split"; if (note && !note.value) note.value = c.title || "Encounter";
+  el.value = ""; $(`#g-xp-amt-${d.sec}`)?.focus();
+};
 /* ----- panels you add yourself (stored per campaign in screen/p_<id>) ----- */
 const PANEL_TYPES = [
   { type: "encounter", title: "Encounter", blurb: "Run a Combats encounter here: initiative, turns, HP and conditions." },

@@ -136,6 +136,7 @@ const REF_ALL = REF_CATS.flatMap(([cat, label]) => SRD[cat].map((x, n) => ({ key
 S.ref = { q: "", cat: "" };
 function refSub(r) {
   const x = r.x;
+  if (r.card) return (r.card.tags || []).join(", ") || "Item card";
   if (r.cat === "spells") return `${x.lv ? "Level " + x.lv : "Cantrip"} ${x.sc}${x.cn ? " · Concentration" : ""}${x.ri ? " · Ritual" : ""}`;
   if (r.cat === "items") return `${x.ca}${x.ra ? " · " + x.ra : ""}${x.at ? " · attunement" : ""}`;
   if (r.cat === "equipment") return [x.ca, x.s].filter(Boolean).join(" · ");
@@ -143,9 +144,16 @@ function refSub(r) {
   if (x.ty) return x.ty[0].toUpperCase() + x.ty.slice(1);
   return r.label;
 }
+/* your own things, searched alongside the SRD: homebrew creatures and Item cards */
+function refHomebrew() {
+  const out = [];
+  for (const m of MON.values()) if (m.hb) out.push({ key: "hb:" + m.i, cat: "monsters", label: "Homebrew creature", x: m, name: m.n, lname: (m.n || "").toLowerCase(), hb: true });
+  for (const c of S.cards.values()) if (c.kind === "item" && c.title) out.push({ key: "card:" + c.id, cat: "items", label: "Your item", x: { n: c.title, d: c.body || "" }, card: c, name: c.title, lname: c.title.toLowerCase(), hb: true });
+  return out;
+}
 function refSearch(q, cat, limit = 300) {
   q = q.trim().toLowerCase();
-  let list = REF_ALL.filter(r => !cat || r.cat === cat);
+  let list = [...refHomebrew(), ...REF_ALL].filter(r => !cat || r.cat === cat);
   if (q) {
     const scored = [];
     for (const r of list) {
@@ -153,12 +161,18 @@ function refSearch(q, cat, limit = 300) {
       if (s < 0 && q.length >= 3 && (r.x.d || "").toLowerCase().includes(q)) s = 3;
       if (s >= 0) scored.push([s, r]);
     }
-    list = scored.sort((a, b) => a[0] - b[0] || a[1].name.localeCompare(b[1].name)).map(x => x[1]);
+    list = scored.sort((a, b) => a[0] - b[0] || (b[1].hb ? 1 : 0) - (a[1].hb ? 1 : 0) || a[1].name.localeCompare(b[1].name)).map(x => x[1]);
   } else list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
   return list.slice(0, limit);
 }
 function refDetail(r) {
   const x = r.x;
+  if (r.card) {
+    const c = r.card, gm = S.canGM ? S.gm.get(c.id) : "";
+    return `<div class="statblock"><div class="sb-head"><h2>${esc(c.title)}</h2><div class="sb-type"><span class="hb-tag">Your item</span>${(c.tags || []).length ? " · " + esc(c.tags.join(", ")) : ""}</div></div>
+      <div class="ref-body">${md(c.body || "") || `<p class="hint">No description yet.</p>`}${gm ? `<h4>GM notes</h4>${md(gm)}` : ""}</div></div>
+      <div><button type="button" class="btn" data-do="open-card" data-id="${esc(c.id)}">Open the card</button></div>`;
+  }
   if (r.cat === "monsters") return `${statBlock(x)}<div><button type="button" class="btn" data-do="goto" data-tab="bestiary" data-id="${esc(x.i)}">Open in Bestiary</button></div>`;
   let head = "";
   if (r.cat === "spells") head = `<div class="sb-core"><div><b>Casting time</b> ${esc(x.ct)}</div><div><b>Range</b> ${esc(x.rg)}</div><div><b>Components</b> ${esc(x.co)}</div><div><b>Duration</b> ${x.cn ? "Concentration, " : ""}${esc(x.du)}</div>${x.cl ? `<div><b>Classes</b> ${esc(x.cl)}</div>` : ""}</div>`;
@@ -172,7 +186,7 @@ function renderReference() {
   const items = list.map(r => ({ id: r.key, title: r.name, sub: refSub(r), badge: S.ref.cat ? "" : `<span class="mono hint">${esc(r.label)}</span>` }));
   const filters = `<input id="ref-q" type="search" data-q="ref" placeholder="Search spells, items, rules…" aria-label="Search the reference" value="${esc(S.ref.q)}">
     <select data-change="ref-cat" aria-label="Category"><option value="">Everything</option>${REF_CATS.map(([c, l]) => `<option value="${c}" ${c === S.ref.cat ? "selected" : ""}>${l} (${SRD[c].length})</option>`).join("")}</select>`;
-  const r = id && REF_ALL.find(x => x.key === id);
+  const r = id && (list.find(x => x.key === id) || REF_ALL.find(x => x.key === id));
   return `<div class="mod">${listPane({ mod: "reference", title: "Reference", items, sel: id, empty: "Nothing matches.", filters })}
     ${r ? `<section class="mdetail" aria-label="${esc(r.name)}">${refDetail(r)}<p class="credit">${SRD_CREDIT}</p></section>` : emptyDetail("Nothing matches", "Try a shorter word, or search Everything.")}</div>`;
 }
@@ -183,9 +197,9 @@ S.quick = { q: "", open: null };
 function quickPanel() {
   const res = S.quick.q.trim() ? refSearch(S.quick.q, "", 12) : [];
   return `<h2>Quick Lookup</h2>
-    <input id="quick-q" class="spell-search" type="search" data-q="quick" placeholder="Any spell, item, condition, creature…" aria-label="Quick lookup" value="${esc(S.quick.q)}">
-    <div class="quick-list" data-keep-scroll="quick">${res.map(r => `<details ${S.quick.open === r.key ? "open" : ""} data-quick="${esc(r.key)}"><summary><b>${esc(r.name)}</b> <span class="hint">${esc(r.label)} · ${esc(refSub(r))}</span></summary>${refDetail(r)}</details>`).join("")
-      || (S.quick.q.trim() ? `<p class="hint">Nothing matches.</p>` : `<p class="hint">Full SRD 5.2 text for ${REF_ALL.length} entries.</p>`)}</div>`;
+    <input id="quick-q" class="spell-search" type="search" data-q="quick" placeholder="Any spell, item, condition, creature, or your own…" aria-label="Quick lookup" value="${esc(S.quick.q)}">
+    <div class="quick-list" data-keep-scroll="quick">${res.map(r => `<details ${S.quick.open === r.key ? "open" : ""} data-quick="${esc(r.key)}"><summary><b>${esc(r.name)}</b> ${r.hb ? `<span class="hb-tag">${r.card ? "Your item" : "Homebrew"}</span> ` : ""}<span class="hint">${r.hb ? "" : esc(r.label) + " · "}${esc(refSub(r))}</span></summary>${refDetail(r)}</details>`).join("")
+      || (S.quick.q.trim() ? `<p class="hint">Nothing matches.</p>` : `<p class="hint">Full SRD 5.2 text for ${REF_ALL.length} entries${(n => n ? `, plus ${n} homebrew creature${n === 1 ? "" : "s"} and item${n === 1 ? "" : "s"} of your own` : "")(refHomebrew().length)}.</p>`)}</div>`;
 }
 document.addEventListener("toggle", e => { const dt = e.target.closest?.("[data-quick]"); if (dt) S.quick.open = dt.open ? dt.dataset.quick : (S.quick.open === dt.dataset.quick ? null : S.quick.open); }, true);
 
