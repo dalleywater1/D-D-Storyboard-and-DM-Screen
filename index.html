@@ -4055,7 +4055,7 @@ function quickPanel() {
   const res = S.quick.q.trim() ? refSearch(S.quick.q, "", 12) : [];
   return `<h2>Quick Lookup</h2>
     <input id="quick-q" class="spell-search" type="search" data-q="quick" placeholder="Any spell, item, condition, creature, or your own…" aria-label="Quick lookup" value="${esc(S.quick.q)}">
-    <div class="quick-list" data-keep-scroll="quick">${res.map(r => `<details ${S.quick.open === r.key ? "open" : ""} data-quick="${esc(r.key)}"><summary><b>${esc(r.name)}</b> ${r.hb ? `<span class="hb-tag">${r.card ? "Your item" : r.mi ? esc(r.mi.book || "Homebrew") : "Homebrew"}</span> ` : ""}<span class="hint">${r.hb ? "" : esc(r.label) + " · "}${esc(refSub(r))}</span></summary>${refDetail(r)}</details>`).join("")
+    <div class="quick-list" data-keep-scroll="quick">${res.map(r => `<details ${S.quick.open === r.key ? "open" : ""} data-quick="${esc(r.key)}"><summary><b>${esc(r.name)}</b> ${r.hb ? `<span class="hb-tag">${r.card ? "Your item" : (r.mi || r.rh) ? esc((r.mi || r.rh).book || "Homebrew") : "Homebrew"}</span> ` : ""}<span class="hint">${r.hb ? "" : esc(r.label) + " · "}${esc(refSub(r))}</span></summary>${refDetail(r)}</details>`).join("")
       || (S.quick.q.trim() ? `<p class="hint">Nothing matches.</p>` : `<p class="hint">Full SRD 5.2 text for ${REF_ALL.length} entries${(n => n ? `, plus ${n} homebrew creature${n === 1 ? "" : "s"} and item${n === 1 ? "" : "s"} of your own` : "")(refHomebrew().length)}.</p>`)}</div>`;
 }
 document.addEventListener("toggle", e => { const dt = e.target.closest?.("[data-quick]"); if (dt) S.quick.open = dt.open ? dt.dataset.quick : (S.quick.open === dt.dataset.quick ? null : S.quick.open); }, true);
@@ -6084,24 +6084,32 @@ async function importHomebrew(data, show) {
   // storyboard cards
   const cards = Array.isArray(data.cards) ? data.cards.filter(o => o && typeof o === "object" && hbPick(o, "title", "name")) : [];
   if (cards.length) {
-    const kinds = new Set(KINDS.map(k => k.id));
-    const gname = book || "Imported";
-    let gid = [...groupsMap().values()].find(g => String(g.title).trim().toLowerCase() === gname.toLowerCase())?.id;
-    if (!gid) { let spot = { x: 24, y: 24 }; try { spot = visibleSpot(G_CLOSED.w, G_CLOSED.h); } catch {} gid = "g_" + uid(); putDoc("groups", gid, { title: gname, color: "", x: spot.x, y: spot.y, open: false, z: topZAll(), created: now }, false); }
+    const kinds = new Set(KINDS.map(k => k.id)), gids = new Map();
+    const groupFor = name => {
+      const gname = String(name || book || "Imported").trim(), k = gname.toLowerCase();
+      if (gids.has(k)) return gids.get(k);
+      let gid = [...groupsMap().values()].find(g => String(g.title).trim().toLowerCase() === k)?.id;
+      if (!gid) { let spot = { x: 24, y: 24 }; try { spot = visibleSpot(G_CLOSED.w, G_CLOSED.h); } catch {} spot.x += gids.size * 300; gid = "g_" + uid(); putDoc("groups", gid, { title: gname, color: "", x: spot.x, y: spot.y, open: false, z: topZAll(), created: now }, false); }
+      gids.set(k, gid); return gid;
+    };
     let order = nextOrder("");
     for (const o of cards) {
+      const gid = groupFor(hbPick(o, "group"));
       let kind = String(hbPick(o, "kind") || "lore").toLowerCase(); if (kind === "place") kind = "location"; if (!kinds.has(kind)) kind = "lore";
       const title = String(hbPick(o, "title", "name")).trim();
       const old = [...S.cards.values()].find(c => c.kind === kind && String(c.title).toLowerCase() === title.toLowerCase());
       if (old && !old.imported) continue; // never overwrite a card you made yourself
+      const page = String(hbPick(o, "page") || ""), src = book ? `\n\n*${book}${page ? ` · p. ${page}` : ""}*` : "";
       const tags = hbPick(o, "tags"), c = { ...(old || { id: uid(), act: "", status: "planned", order: order++, color: "", imageId: "", links: [], group: gid, created: now }),
-        kind, title, body: String(hbPick(o, "body", "text", "description") || ""), tags: (Array.isArray(tags) ? tags : String(tags || "").split(",")).map(t => String(t).trim()).filter(Boolean), imported: true, updated: now };
+        kind, title, body: String(hbPick(o, "body", "text", "description") || "") + src, tags: (Array.isArray(tags) ? tags : String(tags || "").split(",")).map(t => String(t).trim()).filter(Boolean), imported: true, updated: now };
       S.cards.set(c.id, c); await R(P().cards + "/" + c.id).set(c);
       const gm = String(hbPick(o, "gm", "gmNotes", "notes") || "");
       if (gm && S.canGM) { S.gm.set(c.id, gm); await R(P().gm + "/" + c.id).set({ text: gm }); }
       old ? made.cardsUp++ : made.cards++;
     }
   }
+  const refs = Array.isArray(data.reference) ? data.reference.filter(o => o && typeof o === "object") : [];
+  if (refs.length && typeof refhbImport === "function") { const r = await refhbImport(refs, book); made.refs = r.added; made.refsUp = r.updated; }
   return made;
 }
 /* hook into the item importer: a JSON file with creatures or cards gets those too */
@@ -6109,7 +6117,7 @@ const _importItemFileHb = importItemFile;
 importItemFile = async function (file, show) {
   const text = await file.text();
   let data = null; try { if (!/\.csv$/i.test(file.name)) data = parseBackupText(text); } catch {}
-  const hasMore = data && !Array.isArray(data) && ((data.creatures || []).length || (data.cards || []).length);
+  const hasMore = data && !Array.isArray(data) && ((data.creatures || []).length || (data.cards || []).length || (data.reference || []).length);
   if (!hasMore) return _importItemFileHb({ name: file.name, text: async () => text }, show);
   if (!S.canWrite || !S.canGM || !S.db) { show(`<span class="err">This copy can't save, so nothing can be imported here.</span>`); return; }
   let itemMsg = "";
@@ -6118,8 +6126,9 @@ importItemFile = async function (file, show) {
   try {
     const m = await importHomebrew(data, show);
     const parts = [m.creatures && `${m.creatures} new creature${m.creatures === 1 ? "" : "s"}`, m.creaturesUp && `${m.creaturesUp} creature${m.creaturesUp === 1 ? "" : "s"} updated`,
-      m.cards && `${m.cards} new card${m.cards === 1 ? "" : "s"}`, m.cardsUp && `${m.cardsUp} card${m.cardsUp === 1 ? "" : "s"} updated`].filter(Boolean);
-    show(`${itemMsg ? itemMsg + "<br>" : ""}<span class="ok">${parts.join(", ") || "Nothing new"}${(m.creatures + m.creaturesUp) ? ". Creatures are in the Bestiary under Homebrew" : ""}${(m.cards + m.cardsUp) ? `. Cards are in the “${esc(data.book || "Imported")}” group on the Table` : ""}.</span>`);
+      m.cards && `${m.cards} new card${m.cards === 1 ? "" : "s"}`, m.cardsUp && `${m.cardsUp} card${m.cardsUp === 1 ? "" : "s"} updated`,
+      m.refs && `${m.refs} new reference entr${m.refs === 1 ? "y" : "ies"}`, m.refsUp && `${m.refsUp} reference entr${m.refsUp === 1 ? "y" : "ies"} updated`].filter(Boolean);
+    show(`${itemMsg ? itemMsg + "<br>" : ""}<span class="ok">${parts.join(", ") || "Nothing new"}${(m.creatures + m.creaturesUp) ? ". Creatures are in the Bestiary under Homebrew" : ""}${(m.cards + m.cardsUp) ? `. Cards are in their groups on the Table` : ""}${(m.refs || m.refsUp) ? ". Spells, feats and the rest are in Reference and Quick Lookup" : ""}.</span>`);
     toast("Homebrew imported");
   } catch (e) { handleWriteError(e); }
   render();
@@ -6226,6 +6235,78 @@ document.addEventListener("click", e => {
   if (e.target.id === "spell-pop") spellPopClose();
 }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape" && document.getElementById("spell-pop") && !document.getElementById("spell-pop").hidden) { e.stopPropagation(); spellPopClose(); } }, true);
+
+/* ===================== Imported reference entries =====================
+   Spells, feats, subclasses, backgrounds, species notes, equipment and vehicles
+   from other books, imported per campaign (gmx/<board>/refhb, so they travel
+   with backups and GitHub saves, never in the site's code). They appear in the
+   Reference tab and Quick Lookup with their book as a tagline, and imported
+   spells work with the spell-name pop-ups. Imported through Import homebrew:
+   { "book": "…", "reference": [ { cat, name, subtitle, description, page, notes,
+     (spells:) level, school, castingTime, range, components, duration,
+     concentration, ritual, classes, higherLevels } ] } */
+MOD_COLLS.push("refhb");
+const RH_CATS = [["spells", "Spells"], ["feats", "Feats"], ["subclasses", "Subclasses"], ["backgrounds", "Backgrounds"], ["species", "Species"], ["equipment", "Equipment"], ["vehicles", "Mounts & vehicles"]];
+const rhDocs = () => [...((S.mod && S.mod.refhb) || new Map()).values()].filter(d => d && d.name);
+function rhX(d) {
+  if (d.cat === "spells") return { n: d.name, lv: int(d.level), sc: d.school || "", ct: d.castingTime || "", rg: d.range || "", co: d.components || "", du: d.duration || "", cn: !!d.concentration, ri: !!d.ritual, cl: d.classes || "", d: d.description || "", h: d.higherLevels || "" };
+  return { n: d.name, d: d.description || "", ca: d.subtitle || "" };
+}
+function rhEntry(d) {
+  const label = (RH_CATS.find(c => c[0] === d.cat) || REF_CATS.find(c => c[0] === d.cat) || [, d.cat || "Reference"])[1];
+  return { key: "rh:" + d.id, cat: d.cat, label, x: rhX(d), rh: d, name: d.name, lname: d.name.toLowerCase(), hb: true };
+}
+/* searchable everywhere the SRD is */
+const _refHomebrewRh = refHomebrew;
+refHomebrew = function () { return [..._refHomebrewRh(), ...rhDocs().map(rhEntry)]; };
+const _refSubRh = refSub;
+refSub = function (r) { if (r.rh) return r.rh.cat === "spells" ? _refSubRh({ ...r, rh: null }) : (r.rh.subtitle || r.label); return _refSubRh(r); };
+const _refDetailRh = refDetail;
+refDetail = function (r) {
+  if (!r.rh) return _refDetailRh(r);
+  const d = r.rh, tag = `${d.book || "Imported"}${d.page ? ` · p. ${d.page}` : ""}`;
+  let html = _refDetailRh({ ...r, rh: null, card: null, mi: null });
+  html = html.replace(/<\/div><\/div>/, `</div><div class="mi-book">${esc(tag)}</div></div>`);
+  if (d.cat !== "spells" && d.subtitle) html = html.replace(/<div class="sb-type">[^<]*<\/div>/, `<div class="sb-type">${esc(d.subtitle)}</div>`);
+  if (S.canGM && d.notes) html += `<div class="mi-notes"><b>GM notes</b>${md(d.notes)}</div>`;
+  return html;
+};
+/* categories in the Reference filter: the SRD ones plus any imported ones, with counts */
+const _refCatsRh = refCats;
+refCats = function () {
+  const counts = {}; for (const d of rhDocs()) counts[d.cat] = (counts[d.cat] || 0) + 1;
+  const base = _refCatsRh().map(([c, l, n]) => [c, l, n + (counts[c] || 0)]);
+  const extra = RH_CATS.filter(([c]) => !base.some(b => b[0] === c) && counts[c]).map(([c, l]) => [c, l, counts[c]]);
+  return [...base, ...extra];
+};
+/* imported spells in the spell pop-ups */
+function refhbSpell(id) { const d = S.mod?.refhb?.get(id); return d && d.cat === "spells" ? rhEntry(d) : null; }
+const _rhRenderModule = renderModule;
+renderModule = function () {
+  const r = _rhRenderModule.apply(this, arguments);
+  if (typeof spellIndex === "function" && spellIndex(rhDocs().filter(d => d.cat === "spells").map(d => [d.name, "rh:" + d.id]))) requestAnimationFrame(() => linkSpells(document.body));
+  return r;
+};
+/* the import step, called from Import homebrew */
+async function refhbImport(list, book) {
+  const have = new Map(rhDocs().map(d => [`${(d.book || "").toLowerCase()}|${d.cat}|${d.name.toLowerCase()}`, d]));
+  const now = new Date().toISOString(); let added = 0, updated = 0;
+  const pick = (o, ...ks) => { for (const k of ks) if (o[k] != null && String(o[k]).trim() !== "") return o[k]; return ""; };
+  for (const o of list) {
+    const name = String(pick(o, "name", "title")).trim(); if (!name) continue;
+    const cat = String(pick(o, "cat", "category") || "feats").toLowerCase();
+    const b = String(pick(o, "book") || book || "Imported");
+    const doc = { cat, name, book: b, page: String(pick(o, "page")), subtitle: String(pick(o, "subtitle")), description: String(pick(o, "description", "summary", "text")), notes: String(pick(o, "notes", "gm")) };
+    if (cat === "spells") Object.assign(doc, { level: int(pick(o, "level")), school: String(pick(o, "school")), castingTime: String(pick(o, "castingTime")), range: String(pick(o, "range")), components: String(pick(o, "components")),
+      duration: String(pick(o, "duration")), concentration: !!o.concentration, ritual: !!o.ritual, classes: String(pick(o, "classes")), higherLevels: String(pick(o, "higherLevels")) });
+    const key = `${b.toLowerCase()}|${cat}|${name.toLowerCase()}`, old = have.get(key);
+    const id = old ? old.id : "rh_" + uid(), full = { ...(old || { created: now }), ...doc, updated: now, id };
+    S.mod.refhb.set(id, full); have.set(key, full);
+    await R(MP("refhb") + "/" + id).set(full);
+    old ? updated++ : added++;
+  }
+  return { added, updated };
+}
 
 
 /* ---------- boot ---------- */

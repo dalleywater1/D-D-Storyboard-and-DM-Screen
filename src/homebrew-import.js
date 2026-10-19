@@ -49,24 +49,32 @@ async function importHomebrew(data, show) {
   // storyboard cards
   const cards = Array.isArray(data.cards) ? data.cards.filter(o => o && typeof o === "object" && hbPick(o, "title", "name")) : [];
   if (cards.length) {
-    const kinds = new Set(KINDS.map(k => k.id));
-    const gname = book || "Imported";
-    let gid = [...groupsMap().values()].find(g => String(g.title).trim().toLowerCase() === gname.toLowerCase())?.id;
-    if (!gid) { let spot = { x: 24, y: 24 }; try { spot = visibleSpot(G_CLOSED.w, G_CLOSED.h); } catch {} gid = "g_" + uid(); putDoc("groups", gid, { title: gname, color: "", x: spot.x, y: spot.y, open: false, z: topZAll(), created: now }, false); }
+    const kinds = new Set(KINDS.map(k => k.id)), gids = new Map();
+    const groupFor = name => {
+      const gname = String(name || book || "Imported").trim(), k = gname.toLowerCase();
+      if (gids.has(k)) return gids.get(k);
+      let gid = [...groupsMap().values()].find(g => String(g.title).trim().toLowerCase() === k)?.id;
+      if (!gid) { let spot = { x: 24, y: 24 }; try { spot = visibleSpot(G_CLOSED.w, G_CLOSED.h); } catch {} spot.x += gids.size * 300; gid = "g_" + uid(); putDoc("groups", gid, { title: gname, color: "", x: spot.x, y: spot.y, open: false, z: topZAll(), created: now }, false); }
+      gids.set(k, gid); return gid;
+    };
     let order = nextOrder("");
     for (const o of cards) {
+      const gid = groupFor(hbPick(o, "group"));
       let kind = String(hbPick(o, "kind") || "lore").toLowerCase(); if (kind === "place") kind = "location"; if (!kinds.has(kind)) kind = "lore";
       const title = String(hbPick(o, "title", "name")).trim();
       const old = [...S.cards.values()].find(c => c.kind === kind && String(c.title).toLowerCase() === title.toLowerCase());
       if (old && !old.imported) continue; // never overwrite a card you made yourself
+      const page = String(hbPick(o, "page") || ""), src = book ? `\n\n*${book}${page ? ` · p. ${page}` : ""}*` : "";
       const tags = hbPick(o, "tags"), c = { ...(old || { id: uid(), act: "", status: "planned", order: order++, color: "", imageId: "", links: [], group: gid, created: now }),
-        kind, title, body: String(hbPick(o, "body", "text", "description") || ""), tags: (Array.isArray(tags) ? tags : String(tags || "").split(",")).map(t => String(t).trim()).filter(Boolean), imported: true, updated: now };
+        kind, title, body: String(hbPick(o, "body", "text", "description") || "") + src, tags: (Array.isArray(tags) ? tags : String(tags || "").split(",")).map(t => String(t).trim()).filter(Boolean), imported: true, updated: now };
       S.cards.set(c.id, c); await R(P().cards + "/" + c.id).set(c);
       const gm = String(hbPick(o, "gm", "gmNotes", "notes") || "");
       if (gm && S.canGM) { S.gm.set(c.id, gm); await R(P().gm + "/" + c.id).set({ text: gm }); }
       old ? made.cardsUp++ : made.cards++;
     }
   }
+  const refs = Array.isArray(data.reference) ? data.reference.filter(o => o && typeof o === "object") : [];
+  if (refs.length && typeof refhbImport === "function") { const r = await refhbImport(refs, book); made.refs = r.added; made.refsUp = r.updated; }
   return made;
 }
 /* hook into the item importer: a JSON file with creatures or cards gets those too */
@@ -74,7 +82,7 @@ const _importItemFileHb = importItemFile;
 importItemFile = async function (file, show) {
   const text = await file.text();
   let data = null; try { if (!/\.csv$/i.test(file.name)) data = parseBackupText(text); } catch {}
-  const hasMore = data && !Array.isArray(data) && ((data.creatures || []).length || (data.cards || []).length);
+  const hasMore = data && !Array.isArray(data) && ((data.creatures || []).length || (data.cards || []).length || (data.reference || []).length);
   if (!hasMore) return _importItemFileHb({ name: file.name, text: async () => text }, show);
   if (!S.canWrite || !S.canGM || !S.db) { show(`<span class="err">This copy can't save, so nothing can be imported here.</span>`); return; }
   let itemMsg = "";
@@ -83,8 +91,9 @@ importItemFile = async function (file, show) {
   try {
     const m = await importHomebrew(data, show);
     const parts = [m.creatures && `${m.creatures} new creature${m.creatures === 1 ? "" : "s"}`, m.creaturesUp && `${m.creaturesUp} creature${m.creaturesUp === 1 ? "" : "s"} updated`,
-      m.cards && `${m.cards} new card${m.cards === 1 ? "" : "s"}`, m.cardsUp && `${m.cardsUp} card${m.cardsUp === 1 ? "" : "s"} updated`].filter(Boolean);
-    show(`${itemMsg ? itemMsg + "<br>" : ""}<span class="ok">${parts.join(", ") || "Nothing new"}${(m.creatures + m.creaturesUp) ? ". Creatures are in the Bestiary under Homebrew" : ""}${(m.cards + m.cardsUp) ? `. Cards are in the “${esc(data.book || "Imported")}” group on the Table` : ""}.</span>`);
+      m.cards && `${m.cards} new card${m.cards === 1 ? "" : "s"}`, m.cardsUp && `${m.cardsUp} card${m.cardsUp === 1 ? "" : "s"} updated`,
+      m.refs && `${m.refs} new reference entr${m.refs === 1 ? "y" : "ies"}`, m.refsUp && `${m.refsUp} reference entr${m.refsUp === 1 ? "y" : "ies"} updated`].filter(Boolean);
+    show(`${itemMsg ? itemMsg + "<br>" : ""}<span class="ok">${parts.join(", ") || "Nothing new"}${(m.creatures + m.creaturesUp) ? ". Creatures are in the Bestiary under Homebrew" : ""}${(m.cards + m.cardsUp) ? `. Cards are in their groups on the Table` : ""}${(m.refs || m.refsUp) ? ". Spells, feats and the rest are in Reference and Quick Lookup" : ""}.</span>`);
     toast("Homebrew imported");
   } catch (e) { handleWriteError(e); }
   render();

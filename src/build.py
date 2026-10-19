@@ -10,7 +10,7 @@ H = os.path.dirname(os.path.abspath(__file__)) + '/'
 ROOT = os.path.dirname(H.rstrip('/')) + '/'
 s = open(H + 'storyboard.src.html').read()
 bridge = open(ROOT + 'roll20/storyboard-bridge.js').read()
-mods = '\n'.join(open(H + f).read() for f in ['srd/srd-data.js', 'spells-data.js', 'modules.js', 'screen.js', 'grid.js', 'everything.js', 'bestiary.js', 'links.js', 'archive.js', 'npc.js', 'groups.js', 'creatures.js', 'encounter-tools.js', 'github-sync.js', 'timeline.js', 'magic-items.js', 'homebrew-import.js', 'spell-links.js'])
+mods = '\n'.join(open(H + f).read() for f in ['srd/srd-data.js', 'spells-data.js', 'modules.js', 'screen.js', 'grid.js', 'everything.js', 'bestiary.js', 'links.js', 'archive.js', 'npc.js', 'groups.js', 'creatures.js', 'encounter-tools.js', 'github-sync.js', 'timeline.js', 'magic-items.js', 'homebrew-import.js', 'spell-links.js', 'ref-import.js'])
 s = s.replace('/*__MODULES_CSS__*/', open(H + 'modules.css').read()).replace('/*__MODULES_JS__*/', mods)
 assert '__MODULES' not in s
 body = s.replace('__SCRIPT__', json.dumps(bridge).replace('</', '<\\/'))

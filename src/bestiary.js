@@ -200,7 +200,7 @@ function quickPanel() {
   const res = S.quick.q.trim() ? refSearch(S.quick.q, "", 12) : [];
   return `<h2>Quick Lookup</h2>
     <input id="quick-q" class="spell-search" type="search" data-q="quick" placeholder="Any spell, item, condition, creature, or your own…" aria-label="Quick lookup" value="${esc(S.quick.q)}">
-    <div class="quick-list" data-keep-scroll="quick">${res.map(r => `<details ${S.quick.open === r.key ? "open" : ""} data-quick="${esc(r.key)}"><summary><b>${esc(r.name)}</b> ${r.hb ? `<span class="hb-tag">${r.card ? "Your item" : r.mi ? esc(r.mi.book || "Homebrew") : "Homebrew"}</span> ` : ""}<span class="hint">${r.hb ? "" : esc(r.label) + " · "}${esc(refSub(r))}</span></summary>${refDetail(r)}</details>`).join("")
+    <div class="quick-list" data-keep-scroll="quick">${res.map(r => `<details ${S.quick.open === r.key ? "open" : ""} data-quick="${esc(r.key)}"><summary><b>${esc(r.name)}</b> ${r.hb ? `<span class="hb-tag">${r.card ? "Your item" : (r.mi || r.rh) ? esc((r.mi || r.rh).book || "Homebrew") : "Homebrew"}</span> ` : ""}<span class="hint">${r.hb ? "" : esc(r.label) + " · "}${esc(refSub(r))}</span></summary>${refDetail(r)}</details>`).join("")
       || (S.quick.q.trim() ? `<p class="hint">Nothing matches.</p>` : `<p class="hint">Full SRD 5.2 text for ${REF_ALL.length} entries${(n => n ? `, plus ${n} homebrew creature${n === 1 ? "" : "s"} and item${n === 1 ? "" : "s"} of your own` : "")(refHomebrew().length)}.</p>`)}</div>`;
 }
 document.addEventListener("toggle", e => { const dt = e.target.closest?.("[data-quick]"); if (dt) S.quick.open = dt.open ? dt.dataset.quick : (S.quick.open === dt.dataset.quick ? null : S.quick.open); }, true);
