@@ -617,3 +617,10 @@ button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent)
 .spell-pop { position: relative; background: var(--surface); color: var(--ink); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.3); width: min(560px, 100%); max-height: min(80vh, 720px); overflow: auto; padding: 18px 20px; display: grid; gap: 10px; }
 .spell-pop-x { position: absolute; top: 10px; right: 10px; }
 .spell-pop .statblock { margin: 0; }
+
+/* GitHub sync status */
+.gh-auto { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+.gh-auto input { margin-top: 3px; accent-color: var(--accent); }
+#gh-quick.gh-ok::before { content: "✓ "; color: var(--accent); }
+#gh-quick[data-gh-state="dirty"], #gh-quick[data-gh-state="saving"] { opacity: .85; }
+#gh-quick[data-gh-state="offline"], #gh-quick[data-gh-state="empty"] { border-color: var(--bad, #b44); }

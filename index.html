@@ -855,6 +855,13 @@ button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent)
 .spell-pop-x { position: absolute; top: 10px; right: 10px; }
 .spell-pop .statblock { margin: 0; }
 
+/* GitHub sync status */
+.gh-auto { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+.gh-auto input { margin-top: 3px; accent-color: var(--accent); }
+#gh-quick.gh-ok::before { content: "✓ "; color: var(--accent); }
+#gh-quick[data-gh-state="dirty"], #gh-quick[data-gh-state="saving"] { opacity: .85; }
+#gh-quick[data-gh-state="offline"], #gh-quick[data-gh-state="empty"] { border-color: var(--bad, #b44); }
+
 </style>
 
 <div class="wrap">
@@ -4028,15 +4035,17 @@ function refDetail(r) {
   return `<div class="statblock"><div class="sb-head"><h2>${esc(x.n)}</h2><div class="sb-type">${esc(refSub(r))}</div></div>${head}
     <div class="ref-body">${md(x.d) || `<p class="hint">No description.</p>`}${x.h ? `<h4>Using a higher-level spell slot</h4>${md(x.h)}` : ""}</div></div>`;
 }
+/* categories in the Reference filter, with counts (other files add imported ones) */
+function refCats() { return REF_CATS.map(([c, l]) => [c, l, SRD[c].length]); }
 function renderReference() {
   const list = refSearch(S.ref.q, S.ref.cat);
   const id = pickSel("reference", list.map(r => ({ id: r.key })));
   const items = list.map(r => ({ id: r.key, title: r.name, sub: refSub(r), badge: S.ref.cat ? "" : `<span class="mono hint">${esc(r.label)}</span>` }));
   const filters = `<input id="ref-q" type="search" data-q="ref" placeholder="Search spells, items, rules…" aria-label="Search the reference" value="${esc(S.ref.q)}">
-    <select data-change="ref-cat" aria-label="Category"><option value="">Everything</option>${REF_CATS.map(([c, l]) => `<option value="${c}" ${c === S.ref.cat ? "selected" : ""}>${l} (${SRD[c].length})</option>`).join("")}</select>`;
+    <select data-change="ref-cat" aria-label="Category"><option value="">Everything</option>${refCats().map(([c, l, n]) => `<option value="${c}" ${c === S.ref.cat ? "selected" : ""}>${l} (${n})</option>`).join("")}</select>`;
   const r = id && (list.find(x => x.key === id) || REF_ALL.find(x => x.key === id));
   return `<div class="mod">${listPane({ mod: "reference", title: "Reference", items, sel: id, empty: "Nothing matches.", filters })}
-    ${r ? `<section class="mdetail" aria-label="${esc(r.name)}">${refDetail(r)}<p class="credit">${SRD_CREDIT}</p></section>` : emptyDetail("Nothing matches", "Try a shorter word, or search Everything.")}</div>`;
+    ${r ? `<section class="mdetail" aria-label="${esc(r.name)}">${refDetail(r)}${r.hb ? "" : `<p class="credit">${SRD_CREDIT}</p>`}</section>` : emptyDetail("Nothing matches", "Try a shorter word, or search Everything.")}</div>`;
 }
 CHANGES["ref-cat"] = (d, el) => { S.ref.cat = el.value; renderModule(); };
 
@@ -5359,18 +5368,22 @@ async function ghRemote() {
 }
 const ghWhen = d => d ? new Date(d).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
 
-async function ghSave(force) {
-  const c = ghCfg(), msg = $("#gh-msg"), btns = [$("#gh-save"), $("#gh-quick")].filter(Boolean);
+async function ghSave(force, auto) {
+  const c = ghCfg(), msg = auto ? null : $("#gh-msg"), btns = auto ? [] : [$("#gh-save"), $("#gh-quick")].filter(Boolean);
   btns.forEach(b => b && (b.disabled = true));
+  if (auto) ghStatus("saving");
   try {
     msg && (msg.textContent = "Checking GitHub…");
     const remote = await ghRemote();
+    if (auto && remote && remote.sha !== c.sha) { ghStatus("conflict", remote); return; }
     if (remote && remote.sha !== c.sha && !force) {
       if (msg) msg.innerHTML = `<span class="err">GitHub has a newer save${remote.date ? ` from ${esc(ghWhen(remote.date))}` : ""}, probably from another computer. Saving now replaces it (the old one stays in GitHub's history).</span>
         <div class="actions"><button type="button" class="btn small" data-gh="load">Load that save first</button><button type="button" class="btn small danger" data-gh="save-force">Save anyway</button></div>`;
       openSheet("#backup"); return;
     }
     const { data, missing } = await exportAll(t => msg && (msg.textContent = t));
+    const cardCount = data.campaigns.reduce((n, x) => n + (x.cards || []).length, 0);
+    if (auto && remote && remote.size > 50000 && cardCount === 0) { ghStatus("empty"); return; } // never let an empty browser replace a real save
     msg && (msg.textContent = "Sending to GitHub…");
     const body = { message: `Storyboard save: ${data.campaigns.length} campaign${data.campaigns.length === 1 ? "" : "s"}, ${new Date().toLocaleString()}`, content: toB64(JSON.stringify(data)) };
     if (remote) body.sha = remote.sha;
@@ -5378,11 +5391,15 @@ async function ghSave(force) {
     if (!res.ok) throw new Error(await ghWhy(res));
     const j = await res.json();
     ghSet({ ...ghCfg(), sha: j.content.sha, saved: new Date().toISOString() });
-    toast(`Saved to GitHub${missing ? ` (${missing} picture${missing === 1 ? "" : "s"} couldn't be added)` : ""}`);
-    ghRender(`<span class="ok">Saved ${data.campaigns.length} campaign${data.campaigns.length === 1 ? "" : "s"} to ${esc(c.repo)}.</span>`);
+    if (ghDirtySince() <= ghSaveStarted) ghClean();
+    if (auto) ghStatus("synced"); else {
+      ghClean(); ghStatus("synced");
+      toast(`Saved to GitHub${missing ? ` (${missing} picture${missing === 1 ? "" : "s"} couldn't be added)` : ""}`);
+      ghRender(`<span class="ok">Saved ${data.campaigns.length} campaign${data.campaigns.length === 1 ? "" : "s"} to ${esc(c.repo)}.</span>`);
+    }
   } catch (e) {
     const t = e.message === "Failed to fetch" ? "Couldn't reach GitHub. Check your internet connection." : e.message;
-    if (msg) msg.innerHTML = `<span class="err">${esc(t)}</span>`; else toast(t);
+    if (auto) ghStatus("offline", null, t); else if (msg) msg.innerHTML = `<span class="err">${esc(t)}</span>`; else toast(t);
   } finally { btns.forEach(b => b && (b.disabled = false)); }
 }
 async function ghLoad() {
@@ -5395,9 +5412,10 @@ async function ghLoad() {
     if (!res.ok) throw new Error(await ghWhy(res));
     const camps = campaignsIn(parseBackupText(await res.text()));
     if (!camps || !camps.length) { msg.innerHTML = `<span class="err">The save on GitHub has no campaigns in it.</span>`; return; }
-    ghSet({ ...ghCfg(), sha: remote.sha });
-    offerImport(camps, msg);
-    msg.insertAdjacentHTML("afterbegin", `<p class="hint">Save from ${esc(ghWhen(remote.date) || "GitHub")}. Choose what to load:</p>`);
+    ghPending = { camps, sha: remote.sha };
+    msg.innerHTML = `<p class="hint" style="margin:0">Save from ${esc(ghWhen(remote.date) || "GitHub")}: ${camps.map(x => `<b>${esc(x.name || "Campaign")}</b> (${(x.cards || []).length} cards)`).join(", ")}.
+      Loading updates these campaigns in this browser (or adds them if they're not here yet). Campaigns that are only in this browser are kept.</p>
+      <div class="actions"><button type="button" class="btn primary small" data-gh="load-go">Load</button></div>`;
   } catch (e) { msg.innerHTML = `<span class="err">${esc(e.message === "Failed to fetch" ? "Couldn't reach GitHub. Check your internet connection." : e.message)}</span>`; }
 }
 async function ghConnect() {
@@ -5433,6 +5451,7 @@ function ghSection() {
     <div id="gh-msg" aria-live="polite"></div>`;
   return `<h3 class="section-title">GitHub (private repo)</h3>
     <p class="hint" style="margin:0">Connected to <b>${esc(c.repo)}</b>.${c.saved ? ` Last saved from this browser ${esc(ghWhen(c.saved))}.` : ""}</p>
+    <label class="gh-auto"><input type="checkbox" id="gh-auto" ${c.auto === false ? "" : "checked"}> Sync automatically: load the newest save when the page opens and save a few seconds after each change</label>
     <div class="actions"><button type="button" class="btn primary" id="gh-save" data-gh="save">Save to GitHub</button><button type="button" class="btn" data-gh="load">Load from GitHub</button>
       <a class="btn ghost" href="https://github.com/${esc(c.repo)}/commits" target="_blank" rel="noopener">History</a><button type="button" class="btn ghost" data-gh="forget">Disconnect this browser</button></div>
     <div id="gh-msg" aria-live="polite"></div>`;
@@ -5442,6 +5461,77 @@ function ghRender(note) {
   box.innerHTML = ghSection();
   if (note) $("#gh-msg").innerHTML = note;
   const q = $("#gh-quick"); if (q) q.hidden = !ghCfg();
+  if (typeof ghStatus === "function" && ghCfg()) ghStatus(ghState || (ghDirtySince() ? "dirty" : "synced"));
+}
+/* ----- automatic sync -----
+   This browser remembers which save it last loaded or made (cfg.sha) and whether
+   it has changes since (sb-gh-dirty). On opening, and when you come back to the
+   tab: if GitHub has a newer save and nothing changed here, it loads it; if both
+   changed, it asks. A few seconds after you change something, it saves, but only
+   if GitHub still has the save this browser knows (otherwise it asks). */
+const GH_DIRTY = "sb-gh-dirty";
+let ghPending = null;
+async function ghLoadGo() {
+  const p = ghPending, msg = $("#gh-msg"); if (!p) return;
+  ghLoadingNow = true;
+  try { await restoreAll({ campaigns: p.camps }, msg); ghSet({ ...ghCfg(), sha: p.sha }); ghClean(); ghPending = null; ghStatus("synced"); toast("Loaded from GitHub"); }
+  catch (e) { handleWriteError(e); }
+  finally { ghLoadingNow = false; }
+}
+let ghTimer = 0, ghSaveStarted = 0, ghLoadingNow = false;
+const ghAutoOn = () => { const c = ghCfg(); return !!(c && c.sha && c.auto !== false); };
+const ghDirtySince = () => int(lsGet(GH_DIRTY, 0));
+function ghClean() { try { localStorage.removeItem(GH_DIRTY); } catch {} }
+function ghMarkDirty() {
+  if (ghLoadingNow || !ghCfg()) return;
+  if (!ghDirtySince()) lsSet(GH_DIRTY, Date.now());
+  ghStatus("dirty");
+  if (!ghAutoOn()) return;
+  clearTimeout(ghTimer);
+  ghTimer = setTimeout(() => { ghSaveStarted = Date.now(); ghSave(false, true); }, window.__ghDelay || 15000);
+}
+if (window.__STANDALONE) { const _ghW = W; W = function (p) { ghMarkDirty(); return _ghW(p); }; }
+let ghState = "";
+function ghStatus(st, remote, why) {
+  ghState = st;
+  const q = $("#gh-quick"); if (!q) return;
+  const c = ghCfg(); q.hidden = !c;
+  const L = { synced: ["Synced", "Everything here is saved to GitHub"], dirty: [ghAutoOn() ? "Saving soon…" : "Save to GitHub", "Changes here aren't on GitHub yet. Click to save now."],
+    saving: ["Saving…", "Saving to GitHub"], conflict: ["Newer save on GitHub", "Another computer saved since this one last synced. Click to choose what to keep."],
+    offline: ["Not synced", why || "Couldn't reach GitHub. It will try again."], empty: ["Not synced", "This browser has no campaigns, so it won't replace the save on GitHub. Load it from Backup."] }[st] || ["Save to GitHub", ""];
+  q.textContent = L[0]; q.title = L[1]; q.dataset.ghState = st;
+  q.classList.toggle("gh-newer", st === "conflict"); q.classList.toggle("gh-ok", st === "synced");
+  if (st === "conflict") showGhConflict(remote);
+}
+function showGhConflict(remote) {
+  const box = $("#gh-box"); if (!box) return;
+  const m = $("#gh-msg");
+  if (m) m.innerHTML = `<span class="err">GitHub has a newer save${remote?.date ? ` from ${esc(ghWhen(remote.date))}` : ""} and this browser has changes of its own. Choose which to keep (the other stays in GitHub's history).</span>
+    <div class="actions"><button type="button" class="btn small" data-gh="load">Load GitHub's save</button><button type="button" class="btn small danger" data-gh="save-force">Keep this browser's and save</button></div>`;
+}
+async function ghCheckRemote() {
+  const c = ghCfg(); if (!c || !c.sha || !navigator.onLine || ghLoadingNow) return;
+  try {
+    const r = await ghRemote(); if (!r) return;
+    if (r.sha === c.sha) { ghStatus(ghDirtySince() ? "dirty" : "synced"); if (ghDirtySince() && ghAutoOn()) ghMarkDirty(); return; }
+    if (ghDirtySince() || c.auto === false) { ghStatus("conflict", r); toast(`There's a newer save on GitHub${r.date ? ` from ${ghWhen(r.date)}` : ""}. Open Backup to choose what to keep.`); return; }
+    await ghAutoLoad(r);
+  } catch {}
+}
+async function ghAutoLoad(remote) {
+  const c = ghCfg();
+  ghLoadingNow = true; ghStatus("saving"); $("#gh-quick") && ($("#gh-quick").textContent = "Loading…");
+  try {
+    const res = await ghApi(`/repos/${c.repo}/contents/${GH_FILE}`, { headers: { Accept: "application/vnd.github.raw+json" } });
+    if (!res.ok) throw new Error(await ghWhy(res));
+    const camps = campaignsIn(parseBackupText(await res.text()));
+    if (!camps || !camps.length) return;
+    await restoreAll({ campaigns: camps }, document.createElement("span"));
+    ghSet({ ...ghCfg(), sha: remote.sha }); ghClean();
+    toast(`Loaded the latest save from GitHub${remote.date ? ` (${ghWhen(remote.date)})` : ""}`);
+  } catch (e) { ghStatus("offline", null, e.message); return; }
+  finally { ghLoadingNow = false; }
+  ghStatus("synced");
 }
 if (window.__STANDALONE) {
   $("#file-msg").insertAdjacentHTML("afterend", `<div id="gh-box" class="gh-box"></div>`);
@@ -5451,18 +5541,23 @@ if (window.__STANDALONE) {
     const b = e.target.closest("[data-gh]"); if (!b) return;
     const a = b.dataset.gh;
     if (a === "connect") ghConnect();
-    if (a === "save") { if (b.id === "gh-quick") $("#gh-msg").textContent = ""; ghSave(false); }
+    if (a === "save") { if (b.id === "gh-quick" && ghState === "conflict") { openSheet("#backup"); return; } if (b.id === "gh-quick") $("#gh-msg").textContent = ""; ghSave(false); }
     if (a === "save-force") ghSave(true);
     if (a === "load") ghLoad();
+    if (a === "load-go") ghLoadGo();
     if (a === "forget") { if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "Click again to disconnect"; return; } ghSet(null); ghRender(`<span class="ok">Disconnected. Your campaigns in this browser are unchanged.</span>`); }
   });
   document.addEventListener("keydown", e => { if (e.key === "Enter" && (e.target.id === "gh-token" || e.target.id === "gh-repo")) ghConnect(); });
-  // on opening: say so if another computer has saved since this browser last saved or loaded
-  setTimeout(async () => {
-    const c = ghCfg(); if (!c || !navigator.onLine) return;
-    try { const r = await ghRemote(); if (r && c.sha && r.sha !== c.sha) { toast(`There's a newer save on GitHub${r.date ? ` from ${ghWhen(r.date)}` : ""}. Open Backup → Load from GitHub to get it.`); const q = $("#gh-quick"); if (q) q.classList.add("gh-newer"); } } catch {}
-  }, 2500);
+  document.addEventListener("change", e => { if (e.target.id === "gh-auto") { ghSet({ ...ghCfg(), auto: e.target.checked }); ghStatus(ghDirtySince() ? "dirty" : "synced"); if (e.target.checked && ghDirtySince()) ghMarkDirty(); } });
+  setTimeout(ghCheckRemote, 2500);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") { if (ghAutoOn() && ghDirtySince()) { clearTimeout(ghTimer); ghSave(false, true); } }
+    else setTimeout(ghCheckRemote, 500);
+  });
+  window.addEventListener("online", () => setTimeout(ghCheckRemote, 500));
+  ghStatus(ghDirtySince() ? "dirty" : "synced");
 }
+
 
 /* ===================== Historical Timeline =====================
    Events and eras of your world's history, per campaign (gmx/<board>/timeline).
@@ -6044,13 +6139,22 @@ importItemFile = async function (file, show) {
    one-word spells only when written with a capital in the middle of a sentence
    and not part of a longer name, so "casts Shield" links but "Shield Bash",
    "the Second Light" and a sentence starting with "Fear" don't. */
-const SPELL_BY = new Map(SRD.spells.map((s, n) => [s.n.toLowerCase(), n]));
+/* spell names → key ("12" for SRD spell 12, "rh:<id>" for an imported spell) */
+let SPELL_BY = new Map(), RE_MULTI = /$^/, RE_ONE = /$^/, spellSig = "";
 const SPELL_SKIP1 = new Set(["light", "resistance", "darkvision", "creation"]); // too common as rules words
 const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const SPELLS_MULTI = SRD.spells.map(s => s.n).filter(n => /[\s/]/.test(n)).sort((a, b) => b.length - a.length);
-const SPELLS_ONE = SRD.spells.map(s => s.n).filter(n => !/[\s/]/.test(n) && !SPELL_SKIP1.has(n.toLowerCase())).sort((a, b) => b.length - a.length);
-const RE_MULTI = new RegExp(`(?<![\\w'’])(${SPELLS_MULTI.map(reEsc).join("|")})(?![\\w'’])`, "gi");
-const RE_ONE = new RegExp(`(?<![\\w'’])(${SPELLS_ONE.map(reEsc).join("|")})(?![\\w'’])`, "g");
+function spellIndex(extra = []) {
+  const all = [...SRD.spells.map((s, n) => [s.n, String(n)]), ...extra];
+  const sig = all.length + "|" + extra.map(e => e[0]).join("|"); if (sig === spellSig) return false; spellSig = sig;
+  SPELL_BY = new Map(all.map(([n, k]) => [n.toLowerCase(), k]));
+  const names = all.map(e => e[0]);
+  const multi = names.filter(n => /[\s/]/.test(n)).sort((a, b) => b.length - a.length);
+  const one = names.filter(n => !/[\s/]/.test(n) && !SPELL_SKIP1.has(n.toLowerCase())).sort((a, b) => b.length - a.length);
+  RE_MULTI = multi.length ? new RegExp(`(?<![\\w'’])(${multi.map(reEsc).join("|")})(?![\\w'’])`, "gi") : /$^/g;
+  RE_ONE = one.length ? new RegExp(`(?<![\\w'’])(${one.map(reEsc).join("|")})(?![\\w'’])`, "g") : /$^/g;
+  return true;
+}
+spellIndex();
 const SPELL_NO = "input,textarea,select,option,button,a,script,style,h1,h2,h3,h4,.sb-head,.spell-link,.spell-pop,.spell-list,.mlist,.lvl-row,[contenteditable],.tabs,.screen-bar,label > span";
 function spellMatches(text) {
   const out = [];
@@ -6076,7 +6180,7 @@ function linkSpells(root) {
     for (const [i, w] of hits) {
       if (i < at) continue;
       frag.append(text.slice(at, i));
-      const b = document.createElement("button"); b.type = "button"; b.className = "spell-link"; b.dataset.spell = SPELL_BY.get(w.toLowerCase()); b.textContent = w; b.title = "Show the spell";
+      const b = document.createElement("button"); b.type = "button"; b.className = "spell-link"; b.dataset.spell = SPELL_BY.get(w.toLowerCase()) ?? ""; b.textContent = w; b.title = "Show the spell";
       frag.append(b); at = i + w.length;
     }
     frag.append(text.slice(at)); t.replaceWith(frag);
@@ -6094,15 +6198,16 @@ new MutationObserver(muts => {
 requestAnimationFrame(() => linkSpells(document.body));
 
 /* the pop-up */
-function spellPop(n, from) {
-  const s = SRD.spells[n]; if (!s) return;
+function spellPop(key, from) {
+  const imp = String(key).startsWith("rh:") && typeof refhbSpell === "function" ? refhbSpell(String(key).slice(3)) : null;
+  const n = imp ? -1 : Number(key), s = imp ? imp.x : SRD.spells[n]; if (!s) return;
   let pop = document.getElementById("spell-pop");
   if (!pop) { pop = document.createElement("div"); pop.id = "spell-pop"; pop.className = "spell-pop-wrap"; document.body.appendChild(pop); }
   pop.innerHTML = `<div class="spell-pop" role="dialog" aria-modal="true" aria-label="${esc(s.n)}">
     <button type="button" class="icon-btn spell-pop-x" data-spellpop="close" aria-label="Close">×</button>
-    ${refDetail({ cat: "spells", x: s, name: s.n })}
-    <div class="actions"><button type="button" class="btn small" data-spellpop="ref" data-n="${n}">Open in Reference</button></div>
-    <p class="credit">${SRD_CREDIT}</p></div>`;
+    ${refDetail(imp || { cat: "spells", x: s, name: s.n })}
+    <div class="actions"><button type="button" class="btn small" data-spellpop="ref" data-name="${esc(s.n)}">Open in Reference</button></div>
+    ${imp ? "" : `<p class="credit">${SRD_CREDIT}</p>`}</div>`;
   pop.hidden = false; pop._from = from;
   pop.querySelector(".spell-pop-x").focus();
 }
@@ -6110,11 +6215,11 @@ function spellPopClose() { const pop = document.getElementById("spell-pop"); if 
 document.addEventListener("pointerdown", e => { if (e.target.closest?.(".spell-link")) e.stopPropagation(); }, true);
 document.addEventListener("click", e => {
   const l = e.target.closest?.(".spell-link");
-  if (l) { e.preventDefault(); e.stopPropagation(); spellPop(Number(l.dataset.spell), l); return; }
+  if (l) { e.preventDefault(); e.stopPropagation(); spellPop(l.dataset.spell, l); return; }
   const p = e.target.closest?.("[data-spellpop]");
   if (p) {
     e.stopPropagation();
-    if (p.dataset.spellpop === "ref") { const s = SRD.spells[Number(p.dataset.n)]; spellPopClose(); S.ref.q = s.n; S.ref.cat = "spells"; S.sel.reference = null; setTab("reference"); }
+    if (p.dataset.spellpop === "ref") { spellPopClose(); S.ref.q = p.dataset.name; S.ref.cat = "spells"; S.sel.reference = null; setTab("reference"); }
     else spellPopClose();
     return;
   }

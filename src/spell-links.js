@@ -6,13 +6,22 @@
    one-word spells only when written with a capital in the middle of a sentence
    and not part of a longer name, so "casts Shield" links but "Shield Bash",
    "the Second Light" and a sentence starting with "Fear" don't. */
-const SPELL_BY = new Map(SRD.spells.map((s, n) => [s.n.toLowerCase(), n]));
+/* spell names → key ("12" for SRD spell 12, "rh:<id>" for an imported spell) */
+let SPELL_BY = new Map(), RE_MULTI = /$^/, RE_ONE = /$^/, spellSig = "";
 const SPELL_SKIP1 = new Set(["light", "resistance", "darkvision", "creation"]); // too common as rules words
 const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const SPELLS_MULTI = SRD.spells.map(s => s.n).filter(n => /[\s/]/.test(n)).sort((a, b) => b.length - a.length);
-const SPELLS_ONE = SRD.spells.map(s => s.n).filter(n => !/[\s/]/.test(n) && !SPELL_SKIP1.has(n.toLowerCase())).sort((a, b) => b.length - a.length);
-const RE_MULTI = new RegExp(`(?<![\\w'’])(${SPELLS_MULTI.map(reEsc).join("|")})(?![\\w'’])`, "gi");
-const RE_ONE = new RegExp(`(?<![\\w'’])(${SPELLS_ONE.map(reEsc).join("|")})(?![\\w'’])`, "g");
+function spellIndex(extra = []) {
+  const all = [...SRD.spells.map((s, n) => [s.n, String(n)]), ...extra];
+  const sig = all.length + "|" + extra.map(e => e[0]).join("|"); if (sig === spellSig) return false; spellSig = sig;
+  SPELL_BY = new Map(all.map(([n, k]) => [n.toLowerCase(), k]));
+  const names = all.map(e => e[0]);
+  const multi = names.filter(n => /[\s/]/.test(n)).sort((a, b) => b.length - a.length);
+  const one = names.filter(n => !/[\s/]/.test(n) && !SPELL_SKIP1.has(n.toLowerCase())).sort((a, b) => b.length - a.length);
+  RE_MULTI = multi.length ? new RegExp(`(?<![\\w'’])(${multi.map(reEsc).join("|")})(?![\\w'’])`, "gi") : /$^/g;
+  RE_ONE = one.length ? new RegExp(`(?<![\\w'’])(${one.map(reEsc).join("|")})(?![\\w'’])`, "g") : /$^/g;
+  return true;
+}
+spellIndex();
 const SPELL_NO = "input,textarea,select,option,button,a,script,style,h1,h2,h3,h4,.sb-head,.spell-link,.spell-pop,.spell-list,.mlist,.lvl-row,[contenteditable],.tabs,.screen-bar,label > span";
 function spellMatches(text) {
   const out = [];
@@ -38,7 +47,7 @@ function linkSpells(root) {
     for (const [i, w] of hits) {
       if (i < at) continue;
       frag.append(text.slice(at, i));
-      const b = document.createElement("button"); b.type = "button"; b.className = "spell-link"; b.dataset.spell = SPELL_BY.get(w.toLowerCase()); b.textContent = w; b.title = "Show the spell";
+      const b = document.createElement("button"); b.type = "button"; b.className = "spell-link"; b.dataset.spell = SPELL_BY.get(w.toLowerCase()) ?? ""; b.textContent = w; b.title = "Show the spell";
       frag.append(b); at = i + w.length;
     }
     frag.append(text.slice(at)); t.replaceWith(frag);
@@ -56,15 +65,16 @@ new MutationObserver(muts => {
 requestAnimationFrame(() => linkSpells(document.body));
 
 /* the pop-up */
-function spellPop(n, from) {
-  const s = SRD.spells[n]; if (!s) return;
+function spellPop(key, from) {
+  const imp = String(key).startsWith("rh:") && typeof refhbSpell === "function" ? refhbSpell(String(key).slice(3)) : null;
+  const n = imp ? -1 : Number(key), s = imp ? imp.x : SRD.spells[n]; if (!s) return;
   let pop = document.getElementById("spell-pop");
   if (!pop) { pop = document.createElement("div"); pop.id = "spell-pop"; pop.className = "spell-pop-wrap"; document.body.appendChild(pop); }
   pop.innerHTML = `<div class="spell-pop" role="dialog" aria-modal="true" aria-label="${esc(s.n)}">
     <button type="button" class="icon-btn spell-pop-x" data-spellpop="close" aria-label="Close">×</button>
-    ${refDetail({ cat: "spells", x: s, name: s.n })}
-    <div class="actions"><button type="button" class="btn small" data-spellpop="ref" data-n="${n}">Open in Reference</button></div>
-    <p class="credit">${SRD_CREDIT}</p></div>`;
+    ${refDetail(imp || { cat: "spells", x: s, name: s.n })}
+    <div class="actions"><button type="button" class="btn small" data-spellpop="ref" data-name="${esc(s.n)}">Open in Reference</button></div>
+    ${imp ? "" : `<p class="credit">${SRD_CREDIT}</p>`}</div>`;
   pop.hidden = false; pop._from = from;
   pop.querySelector(".spell-pop-x").focus();
 }
@@ -72,11 +82,11 @@ function spellPopClose() { const pop = document.getElementById("spell-pop"); if 
 document.addEventListener("pointerdown", e => { if (e.target.closest?.(".spell-link")) e.stopPropagation(); }, true);
 document.addEventListener("click", e => {
   const l = e.target.closest?.(".spell-link");
-  if (l) { e.preventDefault(); e.stopPropagation(); spellPop(Number(l.dataset.spell), l); return; }
+  if (l) { e.preventDefault(); e.stopPropagation(); spellPop(l.dataset.spell, l); return; }
   const p = e.target.closest?.("[data-spellpop]");
   if (p) {
     e.stopPropagation();
-    if (p.dataset.spellpop === "ref") { const s = SRD.spells[Number(p.dataset.n)]; spellPopClose(); S.ref.q = s.n; S.ref.cat = "spells"; S.sel.reference = null; setTab("reference"); }
+    if (p.dataset.spellpop === "ref") { spellPopClose(); S.ref.q = p.dataset.name; S.ref.cat = "spells"; S.sel.reference = null; setTab("reference"); }
     else spellPopClose();
     return;
   }

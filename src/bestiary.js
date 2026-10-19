@@ -180,15 +180,17 @@ function refDetail(r) {
   return `<div class="statblock"><div class="sb-head"><h2>${esc(x.n)}</h2><div class="sb-type">${esc(refSub(r))}</div></div>${head}
     <div class="ref-body">${md(x.d) || `<p class="hint">No description.</p>`}${x.h ? `<h4>Using a higher-level spell slot</h4>${md(x.h)}` : ""}</div></div>`;
 }
+/* categories in the Reference filter, with counts (other files add imported ones) */
+function refCats() { return REF_CATS.map(([c, l]) => [c, l, SRD[c].length]); }
 function renderReference() {
   const list = refSearch(S.ref.q, S.ref.cat);
   const id = pickSel("reference", list.map(r => ({ id: r.key })));
   const items = list.map(r => ({ id: r.key, title: r.name, sub: refSub(r), badge: S.ref.cat ? "" : `<span class="mono hint">${esc(r.label)}</span>` }));
   const filters = `<input id="ref-q" type="search" data-q="ref" placeholder="Search spells, items, rules…" aria-label="Search the reference" value="${esc(S.ref.q)}">
-    <select data-change="ref-cat" aria-label="Category"><option value="">Everything</option>${REF_CATS.map(([c, l]) => `<option value="${c}" ${c === S.ref.cat ? "selected" : ""}>${l} (${SRD[c].length})</option>`).join("")}</select>`;
+    <select data-change="ref-cat" aria-label="Category"><option value="">Everything</option>${refCats().map(([c, l, n]) => `<option value="${c}" ${c === S.ref.cat ? "selected" : ""}>${l} (${n})</option>`).join("")}</select>`;
   const r = id && (list.find(x => x.key === id) || REF_ALL.find(x => x.key === id));
   return `<div class="mod">${listPane({ mod: "reference", title: "Reference", items, sel: id, empty: "Nothing matches.", filters })}
-    ${r ? `<section class="mdetail" aria-label="${esc(r.name)}">${refDetail(r)}<p class="credit">${SRD_CREDIT}</p></section>` : emptyDetail("Nothing matches", "Try a shorter word, or search Everything.")}</div>`;
+    ${r ? `<section class="mdetail" aria-label="${esc(r.name)}">${refDetail(r)}${r.hb ? "" : `<p class="credit">${SRD_CREDIT}</p>`}</section>` : emptyDetail("Nothing matches", "Try a shorter word, or search Everything.")}</div>`;
 }
 CHANGES["ref-cat"] = (d, el) => { S.ref.cat = el.value; renderModule(); };
 
