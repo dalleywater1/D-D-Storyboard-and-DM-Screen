@@ -26,7 +26,7 @@ Everything you make is saved in **your browser** on the computer you use it on. 
 - To move or share a campaign: **Backup → Download this campaign**, then **Load a file** in the other copy. You choose whether it's added as a new campaign or updates one with the same name.
 - To move everything at once: **Backup → Download everything**.
 - Clearing your browser's site data deletes what's saved, so download a backup now and then.
-- **Import items**: Backup → Import items reads a JSON or CSV list of items (name, type, rarity, attunement, description, source, optional notes for GM notes) into the open campaign as Item cards in a “Magic items” group. Names already there are skipped. Keep item text from published books in your private saves, not in this repo.
+- **Magic Items** tab: the 262 SRD 5.2 magic items built in, plus items you make or import from other books, each tagged with its book and page. Filter by book, rarity, type and attunement. Like the Bestiary, any item can be added to an encounter's loot, dropped on the DM Screen, or made into a storyboard card. Import a book's items (JSON or CSV: name, type, rarity, attunement, description, book, page, GM notes) from the tab or from Backup → Import items; they're stored in your campaign, not in this repo. Keep text from published books in your private saves.
 - **Save to GitHub**: in Backup, connect a *private* GitHub repo with a fine-grained token (Contents: Read and write on that repo only). Then Save to GitHub / Load from GitHub moves everything between computers, and each save is kept in the repo's history. The site warns you before replacing a newer save made on another computer. The repo name and token stay in the browser you enter them in.
 
 ## Building from source
