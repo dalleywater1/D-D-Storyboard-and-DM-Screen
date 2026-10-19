@@ -158,6 +158,7 @@ function refSearch(q, cat, limit = 300) {
     const scored = [];
     for (const r of list) {
       let s = r.lname === q ? 0 : r.lname.startsWith(q) ? 1 : r.lname.includes(q) ? 2 : -1;
+      if (s < 0 && q.length >= 3 && (r.x.ca || "").toLowerCase().includes(q)) s = 2;
       if (s < 0 && q.length >= 3 && (r.x.d || "").toLowerCase().includes(q)) s = 3;
       if (s >= 0) scored.push([s, r]);
     }

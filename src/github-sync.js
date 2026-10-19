@@ -9,19 +9,20 @@ const ghCfg = () => lsGet(GH_KEY, null);
 const ghSet = c => { if (c) lsSet(GH_KEY, c); else { try { localStorage.removeItem(GH_KEY); } catch {} } };
 async function ghApi(path, opt = {}) {
   const c = ghCfg(); if (!c) throw new Error("not connected");
-  const res = await fetch("https://api.github.com" + path, { ...opt, headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + c.token, "X-GitHub-Api-Version": "2022-11-28", ...(opt.headers || {}) } });
+  // no-store: GitHub lets browsers cache answers for a minute, which can hand back an old save or the file's details instead of the file
+  const res = await fetch("https://api.github.com" + path, { cache: "no-store", ...opt, headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + c.token, "X-GitHub-Api-Version": "2022-11-28", ...(opt.headers || {}) } });
   return res;
 }
 const ghWhy = async res => { let m = ""; try { m = (await res.json()).message || ""; } catch {} return res.status === 401 ? "GitHub didn't accept the token. It may have expired: make a new one." : res.status === 403 || res.status === 404 ? "The token can't reach that repo. Check the repo name, and that the token has Contents: Read and write for it." : res.status === 413 || res.status === 422 ? "GitHub refused the file (" + (m || "too large") + ")." : "GitHub said: " + (m || res.status); };
 /* the saved file's current version on GitHub (null if there isn't one yet) */
 async function ghRemote() {
   const c = ghCfg();
-  const res = await ghApi(`/repos/${c.repo}/contents/${GH_FILE}`);
+  const res = await ghApi(`/repos/${c.repo}/contents/${GH_FILE}?t=${Date.now()}`);
   if (res.status === 404) { const r2 = await ghApi(`/repos/${c.repo}`); if (r2.ok) return null; throw new Error(await ghWhy(r2)); }
   if (!res.ok) throw new Error(await ghWhy(res));
   const j = await res.json();
   let date = "";
-  try { const cr = await ghApi(`/repos/${c.repo}/commits?path=${GH_FILE}&per_page=1`); if (cr.ok) { const [x] = await cr.json(); date = x?.commit?.committer?.date || ""; } } catch {}
+  try { const cr = await ghApi(`/repos/${c.repo}/commits?path=${GH_FILE}&per_page=1&t=${Date.now()}`); if (cr.ok) { const [x] = await cr.json(); date = x?.commit?.committer?.date || ""; } } catch {}
   return { sha: j.sha, size: j.size, date };
 }
 const ghWhen = d => d ? new Date(d).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
@@ -60,16 +61,21 @@ async function ghSave(force, auto) {
     if (auto) ghStatus("offline", null, t); else if (msg) msg.innerHTML = `<span class="err">${esc(t)}</span>`; else toast(t);
   } finally { btns.forEach(b => b && (b.disabled = false)); }
 }
+async function ghFetchSave(remote) {
+  const c = ghCfg();
+  const read = async path => { const res = await ghApi(path, { headers: { Accept: "application/vnd.github.raw+json" } }); if (!res.ok) throw new Error(await ghWhy(res)); try { return campaignsIn(parseBackupText(await res.text())); } catch { return null; } };
+  let camps = await read(`/repos/${c.repo}/contents/${GH_FILE}?t=${Date.now()}`);
+  if ((!camps || !camps.length) && remote?.sha) camps = await read(`/repos/${c.repo}/git/blobs/${remote.sha}`);
+  return camps;
+}
 async function ghLoad() {
   const c = ghCfg(), msg = $("#gh-msg");
   try {
     msg.textContent = "Fetching from GitHub…";
     const remote = await ghRemote();
     if (!remote) { msg.innerHTML = `<span class="err">Nothing has been saved to ${esc(c.repo)} yet.</span>`; return; }
-    const res = await ghApi(`/repos/${c.repo}/contents/${GH_FILE}`, { headers: { Accept: "application/vnd.github.raw+json" } });
-    if (!res.ok) throw new Error(await ghWhy(res));
-    const camps = campaignsIn(parseBackupText(await res.text()));
-    if (!camps || !camps.length) { msg.innerHTML = `<span class="err">The save on GitHub has no campaigns in it.</span>`; return; }
+    const camps = await ghFetchSave(remote);
+    if (!camps || !camps.length) { msg.innerHTML = `<span class="err">The save on GitHub couldn't be read as a storyboard save. Check that ${esc(GH_FILE)} in ${esc(c.repo)} is a file the site saved (or one in the same format).</span>`; return; }
     ghPending = { camps, sha: remote.sha };
     msg.innerHTML = `<p class="hint" style="margin:0">Save from ${esc(ghWhen(remote.date) || "GitHub")}: ${camps.map(x => `<b>${esc(x.name || "Campaign")}</b> (${(x.cards || []).length} cards)`).join(", ")}.
       Loading updates these campaigns in this browser (or adds them if they're not here yet). Campaigns that are only in this browser are kept.</p>
@@ -180,10 +186,8 @@ async function ghAutoLoad(remote) {
   const c = ghCfg();
   ghLoadingNow = true; ghStatus("saving"); $("#gh-quick") && ($("#gh-quick").textContent = "Loading…");
   try {
-    const res = await ghApi(`/repos/${c.repo}/contents/${GH_FILE}`, { headers: { Accept: "application/vnd.github.raw+json" } });
-    if (!res.ok) throw new Error(await ghWhy(res));
-    const camps = campaignsIn(parseBackupText(await res.text()));
-    if (!camps || !camps.length) return;
+    const camps = await ghFetchSave(remote);
+    if (!camps || !camps.length) { ghStatus("offline", null, "The save on GitHub couldn't be read."); return; }
     await restoreAll({ campaigns: camps }, document.createElement("span"));
     ghSet({ ...ghCfg(), sha: remote.sha }); ghClean();
     toast(`Loaded the latest save from GitHub${remote.date ? ` (${ghWhen(remote.date)})` : ""}`);
