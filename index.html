@@ -5658,8 +5658,9 @@ renderModule = function () {
    file twice never makes duplicates.
 
    JSON: { "storyboardItems": 1, "items": [ { name, type, rarity, attunement,
-   description, source } ] }  (a bare array of items works too)
-   CSV:  header row name,type,rarity,attunement,description,source */
+   description, source, notes } ] }  (a bare array of items works too)
+   CSV:  header row name,type,rarity,attunement,description,source,notes
+   notes (optional) go into the card's GM notes, e.g. what changed for 5.5e. */
 const ITEM_GROUP = "Magic items";
 function parseCsv(text) {
   const rows = []; let row = [], f = "", q = false;
@@ -5687,6 +5688,7 @@ function readItems(text, fileName) {
   return list.filter(o => o && typeof o === "object").map(o => ({
     name: pick(o, "name", "title"), type: pick(o, "type", "category"), rarity: pick(o, "rarity"),
     attunement: pick(o, "attunement"), description: pick(o, "description", "desc", "text", "body"), source: pick(o, "source", "page", "book"),
+    notes: pick(o, "notes", "conversion", "changes", "gm"),
   })).filter(it => it.name);
 }
 function itemBody(it) {
@@ -5720,6 +5722,7 @@ async function importItems(file, msg) {
         order: order++, color: "", imageId: "", links: [], group: gid, imported: true, created: now, updated: now };
       S.cards.set(c.id, c);
       await R(P().cards + "/" + c.id).set(c);
+      if (it.notes && S.canGM) { S.gm.set(c.id, it.notes); await R(P().gm + "/" + c.id).set({ text: it.notes }); }
       if (++n % 20 === 0) msg.textContent = `Importing… ${n} of ${fresh.length}`;
     }
   } catch (e) { handleWriteError(e); }
@@ -5731,7 +5734,7 @@ async function importItems(file, msg) {
   const at = [...document.querySelectorAll("#backup .section-title")].find(h => h.textContent.trim() === "Load a file");
   if (!at) return;
   at.insertAdjacentHTML("beforebegin", `<h3 class="section-title">Import items</h3>
-    <p class="hint" style="margin:0">A list of items as JSON or CSV (name, type, rarity, attunement, description, source). Each becomes an Item card in this campaign, in a “${ITEM_GROUP}” group on the Table. Items already here with the same name are skipped.</p>
+    <p class="hint" style="margin:0">A list of items as JSON or CSV (name, type, rarity, attunement, description, source, and optional notes for your GM notes). Each becomes an Item card in this campaign, in a “${ITEM_GROUP}” group on the Table. Items already here with the same name are skipped.</p>
     <input type="file" id="items-in" accept=".json,.csv,application/json,text/csv">
     <span id="items-msg"></span>`);
   $("#items-in").onchange = async e => { const f = e.target.files[0]; if (f) { $("#items-msg").textContent = "Reading…"; await importItems(f, $("#items-msg")); } e.target.value = ""; };
