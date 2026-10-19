@@ -74,7 +74,7 @@ function hbDetail(m) {
   }
   const mm = "creatures", f = (p, label, o) => fInput(mm, i, "sb." + p, label, o || {});
   return `<section class="mdetail" aria-label="${esc(m.n)}">${head}
-    <div class="mgrid">${fInput(mm, i, "title", "Name", { wide: true, cls: "big" })}${fInput(mm, i, "family", "Family", { ph: "e.g. Hushed (groups related creatures)" })}</div>
+    <div class="mgrid">${fInput(mm, i, "title", "Name", { wide: true, cls: "big" })}${fInput(mm, i, "family", "Family", { ph: "e.g. Goblinoids (groups related creatures)" })}</div>
     ${fArea(mm, i, "role", "Combat role", { rows: 2, ph: "What it's for in a fight" })}
     <div class="mgrid">${f("size", "Size", { ph: "Medium" })}${f("type", "Type", { ph: "Humanoid" })}${f("al", "Alignment", { ph: "Unaligned" })}${fSelect(mm, i, "sb.cr", "CR", CRS.map(x => [x]), { dflt: "1" })}</div>
     <div class="mgrid">${f("ac", "AC", { type: "number" })}${f("hp", "HP", { type: "number" })}${f("hd", "Hit dice", { ph: "6d8 + 6" })}${f("sp", "Speed", { ph: "30 ft." })}</div>

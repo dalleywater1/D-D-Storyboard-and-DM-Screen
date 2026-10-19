@@ -153,7 +153,7 @@ function gXp(sec) {
       ${S.canWrite ? `<div class="add-row g-award">
         <input id="g-xp-amt-${sec.id}" class="short" type="number" min="0" placeholder="XP" aria-label="XP to award">
         <select id="g-xp-how-${sec.id}" aria-label="How the XP is given"><option value="each">each</option><option value="split">split ${size || "?"} ways</option></select>
-        <input id="g-xp-note-${sec.id}" placeholder="For what: defeated the Hushed" aria-label="What the XP is for">
+        <input id="g-xp-note-${sec.id}" placeholder="For what: cleared the bandit camp" aria-label="What the XP is for">
         <button type="button" class="btn primary" data-do="g-xp-add" data-sec="${sec.id}">Award</button></div>
         ${combats.length ? `<label class="mf"><span>Or from an encounter</span><select data-change="g-xp-enc" data-sec="${sec.id}" aria-label="Fill in the XP from an encounter"><option value="">Choose an encounter…</option>${combats.map(c => `<option value="${esc(c.id)}">${esc(c.title || "Untitled encounter")} · ${fmtN(encStats(c).total)} XP</option>`).join("")}</select></label>` : ""}` : ""}
       ${log.length ? `<ul class="g-log">${log.map((x, n) => ({ x, n })).reverse().map(({ x, n }) => `<li><b>+${fmtN(int(x.amt))}</b><span>${esc(x.note || "XP")}</span>${x.split ? `<span class="hint">${fmtN(x.split)} split ${x.ways} ways</span>` : ""}${S.canWrite ? `<button type="button" class="icon-btn" data-do="g-xp-del" data-sec="${sec.id}" data-n="${n}" aria-label="Remove this award">×</button>` : ""}</li>`).join("")}</ul>` : `<p class="hint" style="margin:0">No XP awarded yet.</p>`}
