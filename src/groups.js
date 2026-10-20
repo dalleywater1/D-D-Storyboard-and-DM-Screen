@@ -7,7 +7,7 @@
    table, then move, group, re-act or archive them together. */
 MOD_COLLS.push("groups");
 S.picked = new Set(); S.gRename = null;
-let gdrag = null, mdrag = null, band = null;
+let gdrag = null, mdrag = null, band = null, gTap = null;
 const G_CLOSED = { w: 280, h: 132 }, G_OPEN = { w: 560, h: 380 };
 const groupsMap = () => (S.mod && S.mod.groups) || new Map();
 const groupOf = c => (c && c.group && groupsMap().get(c.group)) || null;
@@ -354,6 +354,11 @@ document.addEventListener("pointercancel", e => endGroupPointer(e, true));
 function endGroupPointer(e, cancel) {
   if (gdrag && e.pointerId === gdrag.pid) {
     const d = gdrag; gdrag = null; d.el.classList.remove("moving");
+    if (!d.moved && !cancel && !d.resize) {   // two quick taps on a group's title bar rename it
+      const now = Date.now(), dbl = gTap && gTap.id === d.id && now - gTap.t < 450;
+      gTap = dbl ? null : { id: d.id, t: now };
+      if (dbl) { S.gRename = d.id; render(); return; }
+    }
     if (!d.moved || cancel) { if (d.moved) render(); else saveGroup(d.id, { z: d.z }, false); return; }
     if (d.resize) saveGroup(d.id, { ow: d.nw ?? d.b.w, oh: d.nh ?? d.b.h, z: d.z });
     else saveGroup(d.id, { x: d.nx ?? d.b.x, y: d.ny ?? d.b.y, z: d.z });

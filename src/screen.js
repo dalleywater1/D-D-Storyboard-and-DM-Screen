@@ -148,7 +148,7 @@ function gXp(sec) {
   const combats = sortedCombats().filter(c => encStats(c).total);
   return `<div class="g-xp">
       <div class="g-xp-head"><span class="g-xp-num">${fmtN(xp)}</span><span>XP each</span>${pill("Level " + lvl, "muted")}${low && lvl > low ? pill(`Level up: ${low} → ${lvl}`, "good") : ""}</div>
-      <div class="g-bar" role="progressbar" aria-label="Progress to level ${next ? lvl + 1 : 20}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div>
+      <div class="gt-xpbar" role="progressbar" aria-label="Progress to level ${next ? lvl + 1 : 20}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div>
       <p class="hint" style="margin:0">${next ? `${fmtN(next - xp)} XP to level ${lvl + 1} (${fmtN(next)}).` : "Level 20: the top of the table."}</p>
       ${S.canWrite ? `<div class="add-row g-award">
         <input id="g-xp-amt-${sec.id}" class="short" type="number" min="0" placeholder="XP" aria-label="XP to award">
@@ -201,7 +201,7 @@ function guildPanel() {
   const m = "screen", i = "guild", secs = guildSecs(), ed = S.guildEdit && S.canWrite;
   const have = new Set(secs.map(s => s.kind));
   return `<div class="ptitle">${fInput(m, i, "title", null, { aria: "Tracker title", ph: "Your party or guild" })}</div>
-    ${S.canWrite ? `<div class="g-tools">${ed ? `<button type="button" class="btn small" data-do="g-add-open" aria-expanded="${S.guildAdd}">+ Add section</button>` : ""}<button type="button" class="btn ${ed ? "primary" : "ghost"} small" data-do="g-edit" aria-pressed="${ed}">${ed ? "Done" : "Edit sections"}</button></div>` : ""}
+    ${S.canWrite ? `<div class="gt-tools">${ed ? `<button type="button" class="btn small" data-do="g-add-open" aria-expanded="${S.guildAdd}">+ Add section</button>` : ""}<button type="button" class="btn ${ed ? "primary" : "ghost"} small" data-do="g-edit" aria-pressed="${ed}">${ed ? "Done" : "Edit sections"}</button></div>` : ""}
     ${ed ? `<div class="g-edit-box"><div class="mgrid">${fInput(m, i, "paneName", "Pane name", { ph: "Guild Tracker", hint: "on the panels bar" })}${have.has("party") ? fSelect(m, i, "partyRows", "Party rows", [4, 5, 6, 7, 8, 9, 10].map(n => [n]), { dflt: "6" }) : ""}</div>
       ${S.guildAdd ? `<div class="panel-chooser g-chooser">${G_KINDS.map(k => { const off = k.one && have.has(k.kind);
         return `<button type="button" class="panel-choice" data-do="g-add" data-kind="${k.kind}" ${off ? "disabled" : ""}><b>${k.title}</b><span>${off ? "Already in the pane." : k.blurb}</span></button>`; }).join("")}</div>` : ""}</div>` : ""}
