@@ -624,3 +624,4 @@ button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent)
 #gh-quick.gh-ok::before { content: "✓ "; color: var(--accent); }
 #gh-quick[data-gh-state="dirty"], #gh-quick[data-gh-state="saving"] { opacity: .85; }
 #gh-quick[data-gh-state="offline"], #gh-quick[data-gh-state="empty"] { border-color: var(--bad, #b44); }
+.best-imp { flex: 1; justify-content: center; }

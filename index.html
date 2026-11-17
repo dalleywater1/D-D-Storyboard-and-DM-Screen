@@ -861,6 +861,7 @@ button.rl:hover { background: color-mix(in srgb, var(--accent) 22%, transparent)
 #gh-quick.gh-ok::before { content: "✓ "; color: var(--accent); }
 #gh-quick[data-gh-state="dirty"], #gh-quick[data-gh-state="saving"] { opacity: .85; }
 #gh-quick[data-gh-state="offline"], #gh-quick[data-gh-state="empty"] { border-color: var(--bad, #b44); }
+.best-imp { flex: 1; justify-content: center; }
 
 </style>
 
@@ -5067,7 +5068,9 @@ renderBestiary = function () {
     <select data-change="best-src" aria-label="Which creatures"><option value="">All creatures</option><option value="hb" ${S.best.src === "hb" ? "selected" : ""}>Homebrew (${hbIds.length})</option><option value="srd" ${S.best.src === "srd" ? "selected" : ""}>SRD only</option></select>
     <select data-change="best-cr" aria-label="Challenge rating">${CR_BANDS.map(([v, l]) => `<option value="${v}" ${v === S.best.cr ? "selected" : ""}>${l}</option>`).join("")}</select>
     <select data-change="best-type" aria-label="Creature type"><option value="">Any type</option>${MON_TYPES.map(t => `<option value="${t}" ${t === S.best.type ? "selected" : ""}>${t[0].toUpperCase() + t.slice(1)}</option>`).join("")}</select>
-    <select data-change="best-sort" aria-label="Sort"><option value="name" ${S.best.sort === "name" ? "selected" : ""}>A–Z</option><option value="cr" ${S.best.sort === "cr" ? "selected" : ""}>By CR</option></select>`;
+    <select data-change="best-sort" aria-label="Sort"><option value="name" ${S.best.sort === "name" ? "selected" : ""}>A–Z</option><option value="cr" ${S.best.sort === "cr" ? "selected" : ""}>By CR</option></select>
+    ${S.canWrite && S.canGM ? `<div class="mi-frow"><label class="btn small mi-imp best-imp" title="Load monsters from a JSON file, e.g. one made with the monster template">Import monsters…<input type="file" id="best-file" accept=".json,application/json" hidden></label></div>
+    <div id="best-imp-msg" class="mi-imp-msg" aria-live="polite">${S.bestImpMsg || ""}</div>` : ""}`;
   const m = id && MON.get(id);
   const detail = !m ? emptyDetail("No creature matches", "Try a shorter search, or clear the filters.", S.canGM ? "hb-new" : "", "+ New homebrew creature")
     : m.hb ? hbDetail(m)
@@ -6149,6 +6152,34 @@ importItemFile = async function (file, show) {
   h.textContent = "Import homebrew";
   const p = h.nextElementSibling; if (p && p.classList.contains("hint")) p.textContent = "A homebrew file (JSON) with magic items, creatures and storyboard cards, or a CSV of items. Items go to the Magic Items tab, creatures to the Bestiary, cards to the Table in a group named after the book. Importing the same file again updates what it added.";
 })();
+/* Bestiary → Import monsters: the same import, and it also takes a bare list of
+   creatures or a single creature, since that's what chat assistants often give */
+document.addEventListener("change", async e => {
+  const el = e.target; if (!el || el.id !== "best-file") return;
+  const f = el.files[0]; el.value = ""; if (!f) return;
+  const show = h => { S.bestImpMsg = h; const box = $("#best-imp-msg"); if (box) box.innerHTML = h; };
+  show("Reading…");
+  let text = await f.text(), data = null;
+  try { data = parseBackupText(text); } catch {}
+  if (!data) {   // pasted from a chat: drop ``` fences and any words before or after the JSON
+    const t = text.replace(/```(?:json)?/gi, ""), a = t.search(/[[{]/), z = Math.max(t.lastIndexOf("}"), t.lastIndexOf("]"));
+    if (a >= 0 && z > a) try { data = JSON.parse(t.slice(a, z + 1)); } catch {}
+  }
+  if (!data || typeof data !== "object") { show(`<span class="err">That file isn't JSON the storyboard can read. Check it's the whole file and nothing got cut off.</span>`); return; }
+  const isMon = o => o && typeof o === "object" && hbPick(o, "name", "title") && (hbPick(o, "ac", "armorClass") || hbPick(o, "hp", "hitPoints") || hbPick(o, "abilities") || hbPick(o, "actions"));
+  if (Array.isArray(data)) data = { creatures: data.filter(isMon) };
+  else if (!data.creatures && !data.items && !data.cards && !data.reference && isMon(data)) data = { creatures: [data] };
+  else if (!Array.isArray(data.creatures) && Array.isArray(data.monsters)) data = { ...data, creatures: data.monsters };
+  if (!(data.creatures || []).length && !(data.items || []).length && !(data.cards || []).length && !(data.reference || []).length) { show(`<span class="err">No monsters found in that file. It needs a "creatures" list; see the monster template.</span>`); return; }
+  const before = hbDocs().length;
+  await importItemFile({ name: f.name.replace(/\.[^.]*$/, "") + ".json", text: async () => JSON.stringify(data) }, show);
+  if ((data.creatures || []).length) {
+    S.best.src = "hb"; S.best.q = ""; S.best.cr = ""; S.best.type = "";
+    const first = hbDocs().find(d => String(d.title).toLowerCase() === String(hbPick(data.creatures[0], "name", "title")).trim().toLowerCase());
+    if (first) S.sel.bestiary = HB_PREFIX + first.id;
+    render();
+  }
+});
 
 /* ===================== Spell links =====================
    Spell names in displayed text (card text on the Table, stat blocks and their

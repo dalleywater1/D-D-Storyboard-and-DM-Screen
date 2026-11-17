@@ -104,3 +104,31 @@ importItemFile = async function (file, show) {
   h.textContent = "Import homebrew";
   const p = h.nextElementSibling; if (p && p.classList.contains("hint")) p.textContent = "A homebrew file (JSON) with magic items, creatures and storyboard cards, or a CSV of items. Items go to the Magic Items tab, creatures to the Bestiary, cards to the Table in a group named after the book. Importing the same file again updates what it added.";
 })();
+/* Bestiary → Import monsters: the same import, and it also takes a bare list of
+   creatures or a single creature, since that's what chat assistants often give */
+document.addEventListener("change", async e => {
+  const el = e.target; if (!el || el.id !== "best-file") return;
+  const f = el.files[0]; el.value = ""; if (!f) return;
+  const show = h => { S.bestImpMsg = h; const box = $("#best-imp-msg"); if (box) box.innerHTML = h; };
+  show("Reading…");
+  let text = await f.text(), data = null;
+  try { data = parseBackupText(text); } catch {}
+  if (!data) {   // pasted from a chat: drop ``` fences and any words before or after the JSON
+    const t = text.replace(/```(?:json)?/gi, ""), a = t.search(/[[{]/), z = Math.max(t.lastIndexOf("}"), t.lastIndexOf("]"));
+    if (a >= 0 && z > a) try { data = JSON.parse(t.slice(a, z + 1)); } catch {}
+  }
+  if (!data || typeof data !== "object") { show(`<span class="err">That file isn't JSON the storyboard can read. Check it's the whole file and nothing got cut off.</span>`); return; }
+  const isMon = o => o && typeof o === "object" && hbPick(o, "name", "title") && (hbPick(o, "ac", "armorClass") || hbPick(o, "hp", "hitPoints") || hbPick(o, "abilities") || hbPick(o, "actions"));
+  if (Array.isArray(data)) data = { creatures: data.filter(isMon) };
+  else if (!data.creatures && !data.items && !data.cards && !data.reference && isMon(data)) data = { creatures: [data] };
+  else if (!Array.isArray(data.creatures) && Array.isArray(data.monsters)) data = { ...data, creatures: data.monsters };
+  if (!(data.creatures || []).length && !(data.items || []).length && !(data.cards || []).length && !(data.reference || []).length) { show(`<span class="err">No monsters found in that file. It needs a "creatures" list; see the monster template.</span>`); return; }
+  const before = hbDocs().length;
+  await importItemFile({ name: f.name.replace(/\.[^.]*$/, "") + ".json", text: async () => JSON.stringify(data) }, show);
+  if ((data.creatures || []).length) {
+    S.best.src = "hb"; S.best.q = ""; S.best.cr = ""; S.best.type = "";
+    const first = hbDocs().find(d => String(d.title).toLowerCase() === String(hbPick(data.creatures[0], "name", "title")).trim().toLowerCase());
+    if (first) S.sel.bestiary = HB_PREFIX + first.id;
+    render();
+  }
+});

@@ -51,7 +51,9 @@ renderBestiary = function () {
     <select data-change="best-src" aria-label="Which creatures"><option value="">All creatures</option><option value="hb" ${S.best.src === "hb" ? "selected" : ""}>Homebrew (${hbIds.length})</option><option value="srd" ${S.best.src === "srd" ? "selected" : ""}>SRD only</option></select>
     <select data-change="best-cr" aria-label="Challenge rating">${CR_BANDS.map(([v, l]) => `<option value="${v}" ${v === S.best.cr ? "selected" : ""}>${l}</option>`).join("")}</select>
     <select data-change="best-type" aria-label="Creature type"><option value="">Any type</option>${MON_TYPES.map(t => `<option value="${t}" ${t === S.best.type ? "selected" : ""}>${t[0].toUpperCase() + t.slice(1)}</option>`).join("")}</select>
-    <select data-change="best-sort" aria-label="Sort"><option value="name" ${S.best.sort === "name" ? "selected" : ""}>A–Z</option><option value="cr" ${S.best.sort === "cr" ? "selected" : ""}>By CR</option></select>`;
+    <select data-change="best-sort" aria-label="Sort"><option value="name" ${S.best.sort === "name" ? "selected" : ""}>A–Z</option><option value="cr" ${S.best.sort === "cr" ? "selected" : ""}>By CR</option></select>
+    ${S.canWrite && S.canGM ? `<div class="mi-frow"><label class="btn small mi-imp best-imp" title="Load monsters from a JSON file, e.g. one made with the monster template">Import monsters…<input type="file" id="best-file" accept=".json,application/json" hidden></label></div>
+    <div id="best-imp-msg" class="mi-imp-msg" aria-live="polite">${S.bestImpMsg || ""}</div>` : ""}`;
   const m = id && MON.get(id);
   const detail = !m ? emptyDetail("No creature matches", "Try a shorter search, or clear the filters.", S.canGM ? "hb-new" : "", "+ New homebrew creature")
     : m.hb ? hbDetail(m)
